@@ -1,0 +1,19 @@
+[package]
+name = "porumbel"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+authors = ["Alexio <alexio@trom.tf>"]
+description = "Carries photos from Open Camera on the phone to a folder on the computer and hands them to LegatorOCR."
+repository = "https://github.com/chiuta/PORUMBEL"
+readme = "README.md"
+
+# No third-party crates on purpose: trade-free, easy to audit, builds offline.
+[dependencies]
+
+[profile.release]
+overflow-checks = true
+lto = true
+strip = true
+codegen-units = 1

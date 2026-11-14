@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PORUMBEL — pozele din Open Camera, direct în LegatorOCR</title>
+<meta name="description" content="Duce automat pozele făcute cu Open Camera în folderul de pe calculator și le deschide în LegatorOCR. Rust, fără dependențe, fără cloud.">
+<style>
+:root{--bg:#f6f4ef;--fg:#1d2327;--mut:#5d6870;--card:#fff;--line:#d9d4c8;--acc:#1f5f8b}
+@media(prefers-color-scheme:dark){:root{--bg:#15191c;--fg:#e8e6e1;--mut:#9aa5ac;--card:#1f2428;--line:#343c42;--acc:#6fb1de}}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.55 system-ui,Segoe UI,Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:2rem 1rem}
+h1{letter-spacing:.1em;margin:.2rem 0}
+a{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem 1.2rem;margin:1rem 0}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.8rem;overflow:auto;font-size:.85rem}
+.mut{color:var(--mut)}
+.langs a{margin-right:.6rem}
+</style>
+</head>
+<body><main>
+<p class="langs mut"><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.ro.md">Română</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.md">English</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.fr.md">Français</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.it.md">Italiano</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.es.md">Español</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.pt.md">Português</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.de.md">Deutsch</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.hu.md">Magyar</a></p>
+<h1>PORUMBEL</h1>
+<p>Un porumbel-curier pentru scanările tale: duce pozele făcute cu <b>Open Camera</b> în folderul de pe calculator, automat, câte un subfolder pe sesiune, și deschide fiecare sesiune încheiată în <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>.</p>
+<div class="card"><b>Trei căi de transfer</b>, care pot funcționa împreună:
+<ol><li><b>Wi‑Fi</b> — cod QR și pagină de încărcare în browser, sau WebDAV pentru aplicații de sincronizare;</li>
+<li><b>ADB</b> — pozele noi sunt luate direct din folderul camerei, prin USB sau Wi‑Fi;</li>
+<li><b>folder sincronizat</b> — de exemplu cu Syncthing.</li></ol></div>
+<pre>porumbel            # prima rulare: creează setările și pornește serverul
+porumbel qr         # codul QR pentru telefon
+porumbel --adb      # sau: ia pozele prin ADB
+porumbel --watch ~/Syncthing/OpenCamera</pre>
+<p>Un singur program mic în Rust, <b>fără biblioteci externe</b>, pentru Windows, macOS și Linux. Fără cont, fără cloud; licență MIT.</p>
+<p><a href="https://github.com/chiuta/PORUMBEL">Cod sursă și descărcări</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.ro.md">Ghid pas cu pas (Open Camera)</a></p>
+<p class="mut">Panou de control în 8 limbi; <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.ro.md">limite și securitate</a> explicate pe față.</p>
+</main></body></html>

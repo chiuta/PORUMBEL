@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>PORUMBEL</title>
+<style>
+:root{--bg:#f6f4ef;--fg:#1d2327;--mut:#5d6870;--card:#fff;--line:#d9d4c8;--acc:#1f5f8b;--ok:#2d7a3e;--bad:#a8321f}
+@media(prefers-color-scheme:dark){:root{--bg:#15191c;--fg:#e8e6e1;--mut:#9aa5ac;--card:#1f2428;--line:#343c42;--acc:#6fb1de;--ok:#6cc17e;--bad:#e5806e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,Segoe UI,Roboto,sans-serif}
+header{display:flex;gap:.8rem;align-items:center;justify-content:space-between;padding:.8rem 1rem;border-bottom:1px solid var(--line)}
+h1{font-size:1.15rem;margin:0;letter-spacing:.08em}
+main{max-width:980px;margin:0 auto;padding:1rem;display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem}
+h2{font-size:1rem;margin:0 0 .6rem}
+.wide{grid-column:1/-1}
+button,select{font:inherit;padding:.5rem .8rem;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer;min-height:44px}
+button.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+button:disabled{opacity:.5;cursor:default}
+code{background:var(--bg);padding:.1rem .35rem;border-radius:5px;word-break:break-all}
+.mut{color:var(--mut);font-size:.9rem}
+ul{list-style:none;padding:0;margin:0}
+li.s{display:flex;gap:.6rem;align-items:center;justify-content:space-between;padding:.45rem 0;border-top:1px solid var(--line)}
+li.s:first-child{border-top:0}
+.tag{font-size:.75rem;padding:.1rem .45rem;border-radius:99px;border:1px solid var(--line);color:var(--mut)}
+.tag.live{color:var(--ok);border-color:var(--ok)}
+#drop{border:2px dashed var(--line);border-radius:10px;padding:1.2rem;text-align:center}
+#drop.over{border-color:var(--acc)}
+#qr{width:210px;max-width:100%;height:auto;border-radius:6px;background:#fff;display:block}
+pre{margin:0;max-height:240px;overflow:auto;font-size:.82rem;white-space:pre-wrap;word-break:break-word}
+progress{width:100%}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<header><h1>PORUMBEL</h1><div class="row"><span class="mut" id="ver"></span><select id="lang" aria-label="language"><option value="ro">Română</option><option value="en">English</option><option value="fr">Français</option><option value="it">Italiano</option><option value="es">Español</option><option value="pt">Português</option><option value="de">Deutsch</option><option value="hu">Magyar</option></select></div></header>
+<main>
+<section>
+  <h2 data-i="phone">Telefonul</h2>
+  <div class="row"><img id="qr" alt="QR" src=""><div><p class="mut" data-i="scan">Scanați codul cu telefonul (aceeași rețea Wi‑Fi) ca să deschideți pagina de încărcare.</p><p class="mut"><span data-i="webdav">Adresă WebDAV pentru aplicațiile de sincronizare:</span><br><code id="dav">–</code><br><span class="mut" data-i="pw">Parola = tokenul din fișierul de setări.</span></p></div></div>
+</section>
+<section>
+  <h2 data-i="upload">Încărcare din browser</h2>
+  <div id="drop"><p data-i="pick">Alegeți pozele (sau trageți-le aici).</p><input id="file" type="file" accept="image/*" multiple><p class="mut" id="prog"></p><progress id="bar" value="0" max="1" hidden></progress></div>
+</section>
+<section class="wide">
+  <h2 data-i="sessions">Sesiuni</h2>
+  <p class="mut"><span data-i="dest">Folder de destinație:</span> <code id="inbox"></code><br><span data-i="mode">Deschidere în LegatorOCR:</span> <b id="open"></b> · <span data-i="lg">program:</span> <code id="launcher"></code></p>
+  <div class="row" style="margin:.4rem 0 .8rem"><button class="p" id="b-latest" data-i="openlatest">Deschide ultima sesiune în LegatorOCR</button><button id="b-close" data-i="closecur">Încheie sesiunea curentă</button><button id="b-forget" data-i="forget">Uită istoricul primirilor</button></div>
+  <ul id="sess"></ul>
+</section>
+<section class="wide">
+  <h2 data-i="status">Stare</h2>
+  <p class="mut" id="adb"></p>
+  <pre id="log"></pre>
+</section>
+</main>
+<script>
+const T={ro:{phone:"Telefonul",scan:"Scanați codul cu telefonul (aceeași rețea Wi‑Fi) ca să deschideți pagina de încărcare.",webdav:"Adresă WebDAV pentru aplicațiile de sincronizare:",pw:"Parola = tokenul din fișierul de setări.",upload:"Încărcare din browser",pick:"Alegeți pozele (sau trageți-le aici).",sessions:"Sesiuni",dest:"Folder de destinație:",mode:"Deschidere în LegatorOCR:",lg:"program:",openlatest:"Deschide ultima sesiune în LegatorOCR",closecur:"Încheie sesiunea curentă",forget:"Uită istoricul primirilor",status:"Stare",open:"Deschide",live:"în curs",done:"deschisă",photos:"poze",none:"Nicio sesiune încă. Faceți poze cu Open Camera.",auto:"automat (după încheierea sesiunii)",manual:"la cerere",nolauncher:"negăsit — se deschide folderul",sent:"Trimis",err:"Eroare",adb:"ADB: ",confirm:"Sigur? Pozele deja primite pot fi importate din nou."},
+en:{phone:"Phone",scan:"Scan the code with the phone (same Wi‑Fi network) to open the upload page.",webdav:"WebDAV address for sync apps:",pw:"Password = the token from the settings file.",upload:"Upload from the browser",pick:"Choose photos (or drop them here).",sessions:"Sessions",dest:"Destination folder:",mode:"Open in LegatorOCR:",lg:"program:",openlatest:"Open the latest session in LegatorOCR",closecur:"End the current session",forget:"Forget what was received",status:"Status",open:"Open",live:"running",done:"opened",photos:"photos",none:"No session yet. Take photos with Open Camera.",auto:"automatic (when a session ends)",manual:"on request",nolauncher:"not found — the folder is opened instead",sent:"Sent",err:"Error",adb:"ADB: ",confirm:"Sure? Photos already received may be imported again."},
+fr:{phone:"Téléphone",scan:"Scannez le code avec le téléphone (même réseau Wi‑Fi) pour ouvrir la page d'envoi.",webdav:"Adresse WebDAV pour les applis de synchronisation :",pw:"Mot de passe = le jeton du fichier de réglages.",upload:"Envoi depuis le navigateur",pick:"Choisissez les photos (ou déposez-les ici).",sessions:"Sessions",dest:"Dossier de destination :",mode:"Ouverture dans LegatorOCR :",lg:"programme :",openlatest:"Ouvrir la dernière session dans LegatorOCR",closecur:"Terminer la session en cours",forget:"Oublier ce qui a été reçu",status:"État",open:"Ouvrir",live:"en cours",done:"ouverte",photos:"photos",none:"Aucune session pour l'instant. Prenez des photos avec Open Camera.",auto:"automatique (à la fin de la session)",manual:"sur demande",nolauncher:"introuvable — le dossier est ouvert à la place",sent:"Envoyé",err:"Erreur",adb:"ADB : ",confirm:"Sûr ? Les photos déjà reçues pourront être importées de nouveau."},
+it:{phone:"Telefono",scan:"Inquadra il codice con il telefono (stessa rete Wi‑Fi) per aprire la pagina di caricamento.",webdav:"Indirizzo WebDAV per le app di sincronizzazione:",pw:"Password = il token del file delle impostazioni.",upload:"Caricamento dal browser",pick:"Scegli le foto (o trascinale qui).",sessions:"Sessioni",dest:"Cartella di destinazione:",mode:"Apertura in LegatorOCR:",lg:"programma:",openlatest:"Apri l'ultima sessione in LegatorOCR",closecur:"Chiudi la sessione in corso",forget:"Dimentica quanto ricevuto",status:"Stato",open:"Apri",live:"in corso",done:"aperta",photos:"foto",none:"Ancora nessuna sessione. Scatta foto con Open Camera.",auto:"automatica (a fine sessione)",manual:"su richiesta",nolauncher:"non trovato — si apre la cartella",sent:"Inviato",err:"Errore",adb:"ADB: ",confirm:"Sicuro? Le foto già ricevute potrebbero essere importate di nuovo."},
+es:{phone:"Teléfono",scan:"Escanee el código con el teléfono (misma red Wi‑Fi) para abrir la página de subida.",webdav:"Dirección WebDAV para las apps de sincronización:",pw:"Contraseña = el token del archivo de ajustes.",upload:"Subir desde el navegador",pick:"Elija las fotos (o arrástrelas aquí).",sessions:"Sesiones",dest:"Carpeta de destino:",mode:"Apertura en LegatorOCR:",lg:"programa:",openlatest:"Abrir la última sesión en LegatorOCR",closecur:"Terminar la sesión actual",forget:"Olvidar lo recibido",status:"Estado",open:"Abrir",live:"en curso",done:"abierta",photos:"fotos",none:"Aún no hay sesiones. Haga fotos con Open Camera.",auto:"automática (al terminar la sesión)",manual:"a petición",nolauncher:"no encontrado — se abre la carpeta",sent:"Enviado",err:"Error",adb:"ADB: ",confirm:"¿Seguro? Las fotos ya recibidas podrían importarse de nuevo."},
+pt:{phone:"Telemóvel",scan:"Leia o código com o telemóvel (mesma rede Wi‑Fi) para abrir a página de envio.",webdav:"Endereço WebDAV para as apps de sincronização:",pw:"Palavra-passe = o token do ficheiro de definições.",upload:"Envio a partir do navegador",pick:"Escolha as fotos (ou arraste-as para aqui).",sessions:"Sessões",dest:"Pasta de destino:",mode:"Abertura no LegatorOCR:",lg:"programa:",openlatest:"Abrir a última sessão no LegatorOCR",closecur:"Terminar a sessão atual",forget:"Esquecer o que foi recebido",status:"Estado",open:"Abrir",live:"em curso",done:"aberta",photos:"fotos",none:"Ainda sem sessões. Tire fotos com o Open Camera.",auto:"automática (no fim da sessão)",manual:"a pedido",nolauncher:"não encontrado — abre-se a pasta",sent:"Enviado",err:"Erro",adb:"ADB: ",confirm:"Tem a certeza? As fotos já recebidas podem ser importadas de novo."},
+de:{phone:"Telefon",scan:"Code mit dem Telefon scannen (gleiches WLAN), um die Upload-Seite zu öffnen.",webdav:"WebDAV-Adresse für Sync-Apps:",pw:"Passwort = das Token aus der Einstellungsdatei.",upload:"Upload im Browser",pick:"Fotos wählen (oder hierher ziehen).",sessions:"Sitzungen",dest:"Zielordner:",mode:"Öffnen in LegatorOCR:",lg:"Programm:",openlatest:"Letzte Sitzung in LegatorOCR öffnen",closecur:"Aktuelle Sitzung beenden",forget:"Empfangenes vergessen",status:"Status",open:"Öffnen",live:"läuft",done:"geöffnet",photos:"Fotos",none:"Noch keine Sitzung. Fotografieren Sie mit Open Camera.",auto:"automatisch (am Ende der Sitzung)",manual:"auf Anfrage",nolauncher:"nicht gefunden — stattdessen wird der Ordner geöffnet",sent:"Gesendet",err:"Fehler",adb:"ADB: ",confirm:"Sicher? Bereits empfangene Fotos können erneut importiert werden."},
+hu:{phone:"Telefon",scan:"Olvassa be a kódot a telefonnal (ugyanazon a Wi‑Fi hálózaton), hogy megnyíljon a feltöltő oldal.",webdav:"WebDAV-cím a szinkronizáló alkalmazásokhoz:",pw:"Jelszó = a beállításfájlban lévő token.",upload:"Feltöltés a böngészőből",pick:"Válassza ki a fotókat (vagy húzza ide őket).",sessions:"Munkamenetek",dest:"Célmappa:",mode:"Megnyitás a LegatorOCR-ben:",lg:"program:",openlatest:"Utolsó munkamenet megnyitása a LegatorOCR-ben",closecur:"Az aktuális munkamenet lezárása",forget:"A fogadottak elfelejtése",status:"Állapot",open:"Megnyitás",live:"folyamatban",done:"megnyitva",photos:"fotó",none:"Még nincs munkamenet. Fényképezzen az Open Camerával.",auto:"automatikus (a munkamenet végén)",manual:"kérésre",nolauncher:"nem található — helyette a mappa nyílik meg",sent:"Elküldve",err:"Hiba",adb:"ADB: ",confirm:"Biztos? A már fogadott fotók újra importálódhatnak."}};
+const q=new URLSearchParams(location.search),tok=q.get('t')||'';
+let L='en';try{L=localStorage.getItem('lang')}catch(_){}
+if(!T[L]){const n=(navigator.language||'en').slice(0,2).toLowerCase();L=T[n]?n:'en'}
+const $=id=>document.getElementById(id),tr=k=>(T[L]&&T[L][k])||T.en[k]||k;
+function hdr(){return tok?{'x-porumbel-token':tok}:{}}
+function applyLang(){document.documentElement.lang=L;$('lang').value=L;document.querySelectorAll('[data-i]').forEach(e=>e.textContent=tr(e.dataset.i))}
+$('lang').onchange=e=>{L=e.target.value;try{localStorage.setItem('lang',L)}catch(_){};applyLang();refresh()};
+const qs=tok?('?t='+encodeURIComponent(tok)):'';
+$('qr').src='/qr.svg'+qs;
+async function api(path,method){const r=await fetch(path,{method:method||'GET',headers:hdr()});return r.json().catch(()=>({}))}
+async function act(path,confirmMsg){if(confirmMsg&&!confirm(confirmMsg))return;const j=await api(path+qs,'POST');if(j.msg)alert((j.ok?tr('sent'):tr('err'))+': '+j.msg);refresh()}
+$('b-latest').onclick=()=>act('/api/open-latest');
+$('b-close').onclick=()=>act('/api/close');
+$('b-forget').onclick=()=>act('/api/forget',tr('confirm'));
+async function refresh(){
+  let s;try{s=await api('/api/status'+qs)}catch(e){return}
+  if(!s.version)return;
+  $('ver').textContent='v'+s.version;$('inbox').textContent=s.inbox;
+  $('open').textContent=s.open==='auto'?tr('auto'):tr('manual');
+  $('launcher').textContent=s.launcher||tr('nolauncher');
+  $('dav').textContent=s.webdav||'–';
+  $('adb').textContent=s.adb_on?(tr('adb')+(s.adb||'…')):'';
+  const ul=$('sess');ul.textContent='';
+  if(!s.sessions.length){const li=document.createElement('li');li.className='mut';li.textContent=tr('none');ul.appendChild(li)}
+  for(const x of s.sessions){
+    const li=document.createElement('li');li.className='s';
+    const l=document.createElement('span');l.textContent=x.name+' · '+x.count+' '+tr('photos')+' ';
+    const t=document.createElement('span');t.className='tag'+(x.current?' live':'');t.textContent=x.current?tr('live'):(x.opened?tr('done'):'');
+    if(t.textContent)l.appendChild(t);
+    const b=document.createElement('button');b.textContent=tr('open');
+    b.onclick=()=>act('/api/open?s='+encodeURIComponent(x.name)+(tok?'&t='+encodeURIComponent(tok):''));
+    li.append(l,b);ul.appendChild(li)}
+  $('log').textContent=s.log.join('\n');
+}
+// upload from the browser: one PUT per file, sequentially
+async function upload(files){
+  const bar=$('bar'),p=$('prog');let i=0;
+  for(const f of files){
+    i++;bar.hidden=false;bar.value=0;p.textContent=i+'/'+files.length+' '+f.name;
+    await new Promise(res=>{const x=new XMLHttpRequest();
+      x.open('PUT','/api/upload/'+encodeURIComponent(f.name)+qs);
+      if(tok)x.setRequestHeader('x-porumbel-token',tok);
+      x.upload.onprogress=e=>{if(e.lengthComputable){bar.max=e.total;bar.value=e.loaded}};
+      x.onloadend=()=>{if(x.status>=300)p.textContent=tr('err')+': '+f.name+' ('+x.status+')';res()};
+      x.send(f)});
+  }
+  bar.hidden=true;if(files.length)p.textContent=tr('sent')+': '+files.length;refresh();
+}
+$('file').onchange=e=>upload([...e.target.files]);
+const d=$('drop');
+d.ondragover=e=>{e.preventDefault();d.classList.add('over')};
+d.ondragleave=()=>d.classList.remove('over');
+d.ondrop=e=>{e.preventDefault();d.classList.remove('over');upload([...e.dataTransfer.files])};
+applyLang();refresh();setInterval(refresh,2000);
+</script>
+</body>
+</html>

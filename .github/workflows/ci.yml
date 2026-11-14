@@ -1,0 +1,33 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test --all-targets
+      - run: cargo build --release
+      - name: QR encoder against an independent decoder
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          pip install zxing-cpp pillow
+          cargo build --example qrdump
+          python3 tools/check-qr.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: porumbel-${{ matrix.os }}
+          path: |
+            target/release/porumbel
+            target/release/porumbel.exe
+          if-no-files-found: ignore
