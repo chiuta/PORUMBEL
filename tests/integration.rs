@@ -273,9 +273,6 @@ mod unix_only {
     use porumbel::config::OpenMode;
     use std::os::unix::fs::PermissionsExt;
 
-    /// A stand-in for `adb` that runs the "phone" commands on this machine, so the
-    /// real command lines of the ADB transport are exercised end to end.
-
     /// The phone's toybox `stat -c '%s %n'` does not exist on macOS (BSD stat): provide a
     /// portable stand-in first on the PATH of the pretend phone.
     fn stat_shim(dir: &PathBuf) -> String {
@@ -287,6 +284,8 @@ mod unix_only {
         d.display().to_string()
     }
 
+    /// A stand-in for `adb` that runs the "phone" commands on this machine, so the
+    /// real command lines of the ADB transport are exercised end to end.
     fn fake_adb(dir: &PathBuf) -> String {
         let shim = stat_shim(dir);
         let p = dir.join("adb");
