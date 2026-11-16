@@ -19,7 +19,7 @@ Bringt Fotos, die mit **Open Camera** auf dem Telefon entstehen, automatisch in 
 
 Der Server spricht einfaches HTTP im lokalen Netz; alles verlangt das Token. Nutzen Sie ein vertrauenswürdiges WLAN, den ADB-Modus oder `bind = 127.0.0.1`, und setzen Sie den Port nie dem Internet aus. Gespeichert werden nur Bilder mit zugelassenen Endungen unter einem schlichten Dateinamen.
 
-Alle Einstellungen, Grenzen und Schritt-für-Schritt-Anleitungen: [README.md](README.md) und [docs/SETUP.md](docs/SETUP.md) (Englisch), [docs/SETUP.ro.md](docs/SETUP.ro.md) (Rumänisch).
+Alle Einstellungen, Grenzen und Schritt-für-Schritt-Anleitungen: [README.md](README.md) und [docs/SETUP.de.md](docs/SETUP.de.md) · [EN](docs/SETUP.md) · [RO](docs/SETUP.ro.md).
 
 ## Lizenz
 

@@ -1,6 +1,6 @@
 # Setup, step by step
 
-[Română](SETUP.ro.md)
+**English** · [Română](SETUP.ro.md) · [Français](SETUP.fr.md) · [Italiano](SETUP.it.md) · [Español](SETUP.es.md) · [Português](SETUP.pt.md) · [Deutsch](SETUP.de.md) · [Magyar](SETUP.hu.md)
 
 ## 0. On the phone: Open Camera
 
@@ -22,15 +22,18 @@ porumbel qr         # QR code + address for the phone
 Allow the program through the firewall for *private* networks when the system asks (port 8750).
 Open the panel at the address printed at start (`http://localhost:8750/?t=…`).
 
+Not sure everything is in place? `porumbel doctor` checks the folder, the port, the network address,
+LegatorOCR and — with `--adb` — the phone, and says what to fix.
+
 ## 2. Pick a way to move the photos
 
-### ① Wi-Fi, from the phone's browser (nothing to install)
+### ①a Wi-Fi, from the phone's browser (nothing to install)
 
 Phone and computer on the same Wi-Fi (not a guest network that isolates devices). Scan the QR code, tap
 *Choose photos*, select the pages. Names are kept, so the session folder gets the shooting time.
 Good for a handful of pages; for a whole book use ② or ③.
 
-### ① Wi-Fi, a sync app pushes the camera folder (automatic)
+### ①b Wi-Fi, a sync app pushes the camera folder (automatic)
 
 Any app that can upload a folder to a WebDAV server:
 
@@ -69,19 +72,14 @@ complete and LegatorOCR opens with it. Earlier sessions stay in `inbox/` and in 
 
 ## Start with the computer
 
-* **Windows:** `Win+R` → `shell:startup` → put a shortcut to `porumbel.exe` there.
-* **Linux (systemd, per user):** `~/.config/systemd/user/porumbel.service`
-  ```
-  [Unit]
-  Description=PORUMBEL
-  [Service]
-  ExecStart=%h/bin/porumbel
-  Restart=on-failure
-  [Install]
-  WantedBy=default.target
-  ```
-  then `systemctl --user enable --now porumbel`.
-* **macOS:** *System Settings → General → Login Items*, add `porumbel`.
+Ready-made files are in `contrib/`:
+
+* **Windows:** `powershell -ExecutionPolicy Bypass -File contrib\windows-autostart.ps1 "C:\Tools\porumbel.exe"`
+  (a logon task, no admin rights) — or `Win+R` → `shell:startup` and drop a shortcut there.
+* **Linux (systemd, per user):** copy `contrib/porumbel.service` to `~/.config/systemd/user/`, then
+  `systemctl --user enable --now porumbel` (binary expected in `~/bin`; edit `ExecStart` otherwise).
+* **macOS:** copy `contrib/ro.trom.porumbel.plist` to `~/Library/LaunchAgents/` (edit the path), then
+  `launchctl load` it — or add `porumbel` under *System Settings → General → Login Items*.
 
 ## Trouble
 

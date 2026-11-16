@@ -30,7 +30,8 @@ nimic nu iese din rețeaua ta.
    | ② **ADB** | `porumbel --adb` — ia pozele noi direct din folderul camerei, la câteva secunde | depanare USB activată, Android 6+ | cel mai rapid, complet automat, fără rețea |
    | ③ **Folder sincronizat** | `porumbel --watch ~/Syncthing/OpenCamera` | orice aplicație care sincronizează un folder cu calculatorul (Syncthing-Fork, …) | complet automat, pe Wi-Fi |
 
-   Pașii pentru fiecare variantă, cu setările din Open Camera: [docs/SETUP.ro.md](docs/SETUP.ro.md).
+   Pașii pentru fiecare variantă, cu setările din Open Camera: [docs/SETUP.ro.md](docs/SETUP.ro.md) (și în en, fr, it, es, pt, de, hu).
+   Ceva nu merge? `porumbel doctor` verifică folderul, portul, rețeaua, LegatorOCR și (cu `--adb`) telefonul.
 3. Fotografiați paginile. Când vă opriți 90 de secunde (setarea `session_gap`), sesiunea se încheie și
    LegatorOCR se deschide cu folderul deja încărcat. Ordinea paginilor = ordinea fișierelor = ordinea fotografierii.
 

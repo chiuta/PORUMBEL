@@ -99,6 +99,10 @@ fn main() {
             std::thread::sleep(Duration::from_millis(300));
             return;
         }
+        Cmd::Doctor => {
+            let bad = porumbel::doctor::run(&hub, &path);
+            std::process::exit(if bad > 0 { 1 } else { 0 });
+        }
         Cmd::Qr => {
             match hub.phone_url() {
                 Some(u) => {

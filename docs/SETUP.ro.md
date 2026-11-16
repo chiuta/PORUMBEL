@@ -1,6 +1,6 @@
 # Configurare, pas cu pas
 
-[English](SETUP.md)
+[English](SETUP.md) · **Română** · [Français](SETUP.fr.md) · [Italiano](SETUP.it.md) · [Español](SETUP.es.md) · [Português](SETUP.pt.md) · [Deutsch](SETUP.de.md) · [Magyar](SETUP.hu.md)
 
 ## 0. Pe telefon: Open Camera
 
@@ -23,15 +23,18 @@ porumbel qr         # cod QR + adresa pentru telefon
 Permiteți programul în firewall pentru rețele *private* când sistemul întreabă (portul 8750).
 Deschideți panoul la adresa afișată la pornire (`http://localhost:8750/?t=…`).
 
+Nu sunteți siguri că totul e la locul lui? `porumbel doctor` verifică folderul, portul, adresa de rețea,
+LegatorOCR și — cu `--adb` — telefonul, și spune ce trebuie reparat.
+
 ## 2. Alegeți calea de transfer
 
-### ① Wi-Fi, din browserul telefonului (nu instalați nimic)
+### ①a Wi-Fi, din browserul telefonului (nu instalați nimic)
 
 Telefonul și calculatorul în aceeași rețea Wi-Fi (nu o rețea pentru oaspeți care izolează dispozitivele).
 Scanați codul QR, apăsați *Alegeți pozele*, selectați paginile. Numele se păstrează, deci folderul sesiunii
 primește ora fotografierii. Potrivit pentru câteva pagini; pentru o carte întreagă folosiți ② sau ③.
 
-### ① Wi-Fi, o aplicație de sincronizare trimite folderul camerei (automat)
+### ①b Wi-Fi, o aplicație de sincronizare trimite folderul camerei (automat)
 
 Orice aplicație care poate încărca un folder pe un server WebDAV:
 
@@ -70,19 +73,14 @@ complet și LegatorOCR se deschide cu el. Sesiunile vechi rămân în `inbox/` �
 
 ## Pornire odată cu calculatorul
 
-* **Windows:** `Win+R` → `shell:startup` → puneți acolo o scurtătură către `porumbel.exe`.
-* **Linux (systemd, per utilizator):** `~/.config/systemd/user/porumbel.service`
-  ```
-  [Unit]
-  Description=PORUMBEL
-  [Service]
-  ExecStart=%h/bin/porumbel
-  Restart=on-failure
-  [Install]
-  WantedBy=default.target
-  ```
-  apoi `systemctl --user enable --now porumbel`.
-* **macOS:** *Setări sistem → General → Elemente de autentificare*, adăugați `porumbel`.
+Fișiere gata făcute în `contrib/`:
+
+* **Windows:** `powershell -ExecutionPolicy Bypass -File contrib\windows-autostart.ps1 "C:\Tools\porumbel.exe"`
+  (sarcină la autentificare, fără drepturi de administrator) — sau `Win+R` → `shell:startup` și o scurtătură.
+* **Linux (systemd, per utilizator):** copiați `contrib/porumbel.service` în `~/.config/systemd/user/`, apoi
+  `systemctl --user enable --now porumbel` (binarul se așteaptă în `~/bin`; altfel editați `ExecStart`).
+* **macOS:** copiați `contrib/ro.trom.porumbel.plist` în `~/Library/LaunchAgents/` (editați calea), apoi
+  `launchctl load` — sau adăugați `porumbel` în *Setări sistem → General → Elemente de autentificare*.
 
 ## Probleme
 

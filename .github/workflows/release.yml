@@ -1,9 +1,19 @@
 name: Release
 # Push a tag such as v0.1.0-alpha.1 → binaries for Windows, macOS and Linux and a PRE-RELEASE.
 # Tags containing a dash (alpha, beta, rc) are published as pre-releases.
+# Without a local git: Actions → Release → "Run workflow" → type the tag (e.g. v0.1.0-alpha.1);
+# the tag is then created on the chosen branch by the release step.
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v0.1.0-alpha.1 (created on the selected branch)"
+        required: true
+        type: string
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 permissions:
   contents: write
 jobs:
@@ -18,7 +28,16 @@ jobs:
           - { os: macos-15-intel, name: macos-x86_64, target: x86_64-apple-darwin, bin: porumbel, pack: tar }
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Tag name sanity
+        shell: bash
+        run: |
+          case "$TAG" in v[0-9]*) ;; *) echo "tag must look like v0.1.0 or v0.1.0-alpha.1 (got $TAG)"; exit 1;; esac
       - uses: actions/checkout@v5
+      - name: Tag matches Cargo.toml
+        shell: bash
+        run: |
+          v=$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -1)
+          [ "v$v" = "$TAG" ] || { echo "Cargo.toml says $v but the tag is $TAG"; exit 1; }
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -27,7 +46,7 @@ jobs:
       - name: Package
         shell: bash
         run: |
-          d="porumbel-${GITHUB_REF_NAME}-${{ matrix.name }}"
+          d="porumbel-${TAG}-${{ matrix.name }}"
           mkdir "$d"
           cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" LICENSE README*.md SECURITY.md "$d/"
           cp -r docs "$d/docs"
@@ -36,7 +55,7 @@ jobs:
       - name: Smoke test of the packaged binary
         shell: bash
         run: |
-          d="porumbel-${GITHUB_REF_NAME}-${{ matrix.name }}"
+          d="porumbel-${TAG}-${{ matrix.name }}"
           "$d/${{ matrix.bin }}" --version
           "$d/${{ matrix.bin }}" --help > /dev/null
       - uses: actions/upload-artifact@v5
@@ -58,5 +77,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           flags="--generate-notes"
-          case "$GITHUB_REF_NAME" in *-*) flags="$flags --prerelease";; esac
-          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "PORUMBEL $GITHUB_REF_NAME" $flags
+          case "$TAG" in *-*) flags="$flags --prerelease";; esac
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "PORUMBEL $TAG" $flags

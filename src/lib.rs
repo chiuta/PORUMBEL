@@ -5,6 +5,7 @@
 
 pub mod adb;
 pub mod config;
+pub mod doctor;
 pub mod hub;
 pub mod launch;
 pub mod qr;

@@ -1,0 +1,15 @@
+# Linux, per user:  cp contrib/porumbel.service ~/.config/systemd/user/
+#                   systemctl --user enable --now porumbel
+# The binary is expected in ~/bin/porumbel. LegatorOCR needs a desktop session, so keep this a
+# *user* service (not a system one). Note: the journal records the panel address with the token.
+[Unit]
+Description=PORUMBEL — Open Camera photos to LegatorOCR
+After=graphical-session.target network-online.target
+
+[Service]
+ExecStart=%h/bin/porumbel
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

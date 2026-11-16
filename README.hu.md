@@ -19,7 +19,7 @@ Automatikusan átviszi a telefonon az **Open Camera** alkalmazással készült f
 
 A szerver egyszerű HTTP-n beszél a helyi hálózaton; minden a tokent kéri. Használjon megbízható Wi‑Fit, ADB módot vagy `bind = 127.0.0.1` beállítást, és soha ne tegye ki a portot az internetnek. Csak az engedélyezett kiterjesztésű képek maradnak meg, egyszerű fájlnévvel.
 
-Teljes beállítások, korlátok és lépésenkénti útmutatók: [README.md](README.md) és [docs/SETUP.md](docs/SETUP.md) (angol), [docs/SETUP.ro.md](docs/SETUP.ro.md) (román).
+Teljes beállítások, korlátok és lépésenkénti útmutatók: [README.md](README.md) és [docs/SETUP.hu.md](docs/SETUP.hu.md) · [EN](docs/SETUP.md) · [RO](docs/SETUP.ro.md).
 
 ## Licenc
 

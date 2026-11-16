@@ -31,7 +31,8 @@ nothing leaves your network.
    | ② **ADB** | `porumbel --adb` — pulls new photos straight from the camera folder, every few seconds | USB debugging on, Android 6+ | fastest, fully automatic, no network |
    | ③ **Synced folder** | `porumbel --watch ~/Syncthing/OpenCamera` | any app that syncs a folder to the computer (Syncthing-Fork, …) | fully automatic, Wi-Fi |
 
-   Step by step for each way, with the Open Camera settings: [docs/SETUP.md](docs/SETUP.md).
+   Step by step for each way, with the Open Camera settings: [docs/SETUP.md](docs/SETUP.md) (also in Română, Français, Italiano, Español, Português, Deutsch, Magyar).
+   Something not working? `porumbel doctor` checks folder, port, network, LegatorOCR and (with `--adb`) the phone.
 3. Shoot your pages. When you stop for 90 seconds (setting `session_gap`), the session is closed and
    LegatorOCR opens with that folder already loaded. Page order = file order = shooting order.
 

@@ -19,7 +19,7 @@ Porta automaticamente le foto scattate con **Open Camera** sul telefono in una c
 
 Il server usa HTTP semplice sulla rete locale; tutto richiede il token. Usate un Wi‑Fi fidato, la modalità ADB o `bind = 127.0.0.1`, e non esponete mai la porta su Internet. Si conservano solo immagini con estensioni accettate, con un nome di file semplice.
 
-Impostazioni complete, limiti e guide passo passo: [README.md](README.md) e [docs/SETUP.md](docs/SETUP.md) (inglese), [docs/SETUP.ro.md](docs/SETUP.ro.md) (rumeno).
+Impostazioni complete, limiti e guide passo passo: [README.md](README.md) e [docs/SETUP.it.md](docs/SETUP.it.md) · [EN](docs/SETUP.md) · [RO](docs/SETUP.ro.md).
 
 ## Licenza
 

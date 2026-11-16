@@ -50,6 +50,7 @@ pub enum Cmd {
     OpenLast,
     Forget,
     PrintConfig,
+    Doctor,
     Help,
     Version,
 }
@@ -297,6 +298,7 @@ USAGE
   porumbel open-last            open the newest session in LegatorOCR and exit
   porumbel forget               forget which photos were already received
   porumbel print-config         show the effective settings
+  porumbel doctor               check folder, port, adb, phone and LegatorOCR
 
 OPTIONS (same names as in the settings file)
   --config FILE        settings file            --inbox DIR      destination folder
@@ -366,6 +368,7 @@ pub fn apply_args(cfg: &mut Config, args: &[String]) -> Result<Cmd, String> {
                 "open-last" => cmd = Cmd::OpenLast,
                 "forget" => cmd = Cmd::Forget,
                 "print-config" => cmd = Cmd::PrintConfig,
+                "doctor" => cmd = Cmd::Doctor,
                 other => return Err(format!("unknown argument: {other}  (try --help)")),
             }
         }

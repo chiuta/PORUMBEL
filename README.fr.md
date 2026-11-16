@@ -19,7 +19,7 @@ Envoie automatiquement les photos prises avec **Open Camera** sur le téléphone
 
 Le serveur parle en HTTP simple sur le réseau local ; tout exige le jeton. Utilisez un Wi‑Fi de confiance, le mode ADB ou `bind = 127.0.0.1`, et n'exposez jamais le port sur Internet. Seules les images aux extensions acceptées sont conservées, sous un nom de fichier simple.
 
-Réglages complets, limites et guides pas à pas : [README.md](README.md) et [docs/SETUP.md](docs/SETUP.md) (anglais), [docs/SETUP.ro.md](docs/SETUP.ro.md) (roumain).
+Réglages complets, limites et guides pas à pas : [README.md](README.md) et [docs/SETUP.fr.md](docs/SETUP.fr.md) · [EN](docs/SETUP.md) · [RO](docs/SETUP.ro.md).
 
 ## Licence
 

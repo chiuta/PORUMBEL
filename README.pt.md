@@ -19,7 +19,7 @@ Leva automaticamente as fotos tiradas com o **Open Camera** no telemóvel para u
 
 O servidor usa HTTP simples na rede local; tudo exige o token. Use um Wi‑Fi de confiança, o modo ADB ou `bind = 127.0.0.1`, e nunca exponha a porta à internet. Só se guardam imagens com extensões aceites, com um nome de ficheiro simples.
 
-Definições completas, limites e guias passo a passo: [README.md](README.md) e [docs/SETUP.md](docs/SETUP.md) (inglês), [docs/SETUP.ro.md](docs/SETUP.ro.md) (romeno).
+Definições completas, limites e guias passo a passo: [README.md](README.md) e [docs/SETUP.pt.md](docs/SETUP.pt.md) · [EN](docs/SETUP.md) · [RO](docs/SETUP.ro.md).
 
 ## Licença
 

@@ -73,6 +73,16 @@ fn shq(s: &str) -> String {
     format!("'{}'", s.replace('\'', "'\\''"))
 }
 
+/// First line of `adb version` (used by `porumbel doctor`).
+pub fn version(hub: &Hub) -> Result<String, String> {
+    let mut c = Command::new(&hub.cfg.adb_path);
+    c.arg("version").stdin(Stdio::null());
+    #[cfg(windows)]
+    c.creation_flags(0x0800_0000);
+    let t = run(c, hub.cfg.adb_timeout)?;
+    Ok(t.lines().next().unwrap_or("adb").trim().to_string())
+}
+
 /// Is one phone connected and authorised? Returns its serial.
 pub fn device(hub: &Hub) -> Result<String, String> {
     let mut c = Command::new(&hub.cfg.adb_path);
