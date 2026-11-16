@@ -51,7 +51,7 @@ jobs:
           cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" LICENSE README*.md SECURITY.md "$d/"
           cp -r docs "$d/docs"
           if [ "${{ matrix.pack }}" = zip ]; then 7z a "$d.zip" "$d" >/dev/null; else tar czf "$d.tar.gz" "$d"; fi
-          ls -l porumbel-*.*
+          ls -l porumbel-*.tar.gz porumbel-*.zip 2>/dev/null || true
       - name: Smoke test of the packaged binary
         shell: bash
         run: |
@@ -61,7 +61,10 @@ jobs:
       - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.name }}
-          path: porumbel-*.*
+          path: |
+            porumbel-*.tar.gz
+            porumbel-*.zip
+          if-no-files-found: error
   release:
     needs: build
     runs-on: ubuntu-26.04
