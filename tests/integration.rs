@@ -275,11 +275,24 @@ mod unix_only {
 
     /// A stand-in for `adb` that runs the "phone" commands on this machine, so the
     /// real command lines of the ADB transport are exercised end to end.
+
+    /// The phone's toybox `stat -c '%s %n'` does not exist on macOS (BSD stat): provide a
+    /// portable stand-in first on the PATH of the pretend phone.
+    fn stat_shim(dir: &PathBuf) -> String {
+        let d = dir.join("shim");
+        fs::create_dir_all(&d).unwrap();
+        let p = d.join("stat");
+        fs::write(&p, "#!/bin/sh\nshift 2\nfor f in \"$@\"; do printf '%s %s\\n' \"$(wc -c < \"$f\" | tr -d ' ')\" \"$f\"; done\n").unwrap();
+        fs::set_permissions(&p, fs::Permissions::from_mode(0o755)).unwrap();
+        d.display().to_string()
+    }
+
     fn fake_adb(dir: &PathBuf) -> String {
+        let shim = stat_shim(dir);
         let p = dir.join("adb");
         fs::write(
             &p,
-            "#!/bin/sh\nwhile [ \"$1\" = \"-s\" ]; do shift 2; done\ncase \"$1\" in\n devices) printf 'List of devices attached\\nFAKE123\\tdevice\\n\\n';;\n shell) shift; sh -c \"$1\";;\n pull) cp \"$2\" \"$3\";;\n *) exit 1;;\nesac\n",
+            format!("#!/bin/sh\nPATH='{shim}':\"$PATH\"\nwhile [ \"$1\" = \"-s\" ]; do shift 2; done\ncase \"$1\" in\n devices) printf 'List of devices attached\\nFAKE123\\tdevice\\n\\n';;\n shell) shift; sh -c \"$1\";;\n pull) cp \"$2\" \"$3\";;\n *) exit 1;;\nesac\n"),
         )
         .unwrap();
         fs::set_permissions(&p, fs::Permissions::from_mode(0o755)).unwrap();
