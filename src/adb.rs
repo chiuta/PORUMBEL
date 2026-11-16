@@ -6,7 +6,7 @@ use crate::hub::Hub;
 use crate::util;
 use std::collections::HashMap;
 use std::process::{Command, Stdio};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -22,21 +22,50 @@ fn adb_cmd(hub: &Hub) -> Command {
     c
 }
 
-fn run(mut c: Command) -> Result<String, String> {
-    let out = c
-        .output()
+/// Run a command, but never wait longer than `secs`: a wedged `adb` server (phone
+/// unplugged mid-copy, sleeping USB hub…) must not freeze PORUMBEL.
+fn run(mut c: Command, secs: u64) -> Result<String, String> {
+    use std::io::Read;
+    c.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = c
+        .spawn()
         .map_err(|e| format!("cannot run adb ({e}); install platform-tools or set adb_path"))?;
-    if !out.status.success() {
-        let err = String::from_utf8_lossy(&out.stderr);
-        let so = String::from_utf8_lossy(&out.stdout);
-        let msg = if err.trim().is_empty() {
-            so.trim().to_string()
+    let mut out = child.stdout.take().ok_or("no stdout")?;
+    let mut err = child.stderr.take().ok_or("no stderr")?;
+    let t_out = std::thread::spawn(move || {
+        let mut b = Vec::new();
+        let _ = out.read_to_end(&mut b);
+        b
+    });
+    let t_err = std::thread::spawn(move || {
+        let mut b = Vec::new();
+        let _ = err.read_to_end(&mut b);
+        b
+    });
+    let deadline = Instant::now() + Duration::from_secs(secs);
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(st)) => break st,
+            Ok(None) if Instant::now() >= deadline => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(format!("adb did not answer within {secs} s"));
+            }
+            Ok(None) => std::thread::sleep(Duration::from_millis(40)),
+            Err(e) => return Err(e.to_string()),
+        }
+    };
+    let so = String::from_utf8_lossy(&t_out.join().unwrap_or_default()).to_string();
+    let se = String::from_utf8_lossy(&t_err.join().unwrap_or_default()).to_string();
+    if !status.success() {
+        let msg = if se.trim().is_empty() {
+            so.trim()
         } else {
-            err.trim().to_string()
+            se.trim()
         };
         return Err(msg.lines().next().unwrap_or("adb failed").to_string());
     }
-    Ok(String::from_utf8_lossy(&out.stdout).replace('\r', ""))
+    Ok(so.replace('\r', ""))
 }
 
 /// Single-quote for the phone's shell.
@@ -50,7 +79,7 @@ pub fn device(hub: &Hub) -> Result<String, String> {
     c.arg("devices").stdin(Stdio::null());
     #[cfg(windows)]
     c.creation_flags(0x0800_0000);
-    let text = run(c)?;
+    let text = run(c, hub.cfg.adb_timeout)?;
     let mut found: Option<String> = None;
     let mut other = String::new();
     for l in text.lines().skip(1) {
@@ -89,7 +118,8 @@ pub fn list_remote(hub: &Hub) -> Result<Vec<(String, u64)>, String> {
     );
     let mut c = adb_cmd(hub);
     c.arg("shell").arg(script);
-    let text = run(c)?;
+    let text = run(c, hub.cfg.adb_timeout)?;
+    let dir = hub.cfg.phone_dir.trim_end_matches('/');
     let mut v = Vec::new();
     for l in text.lines() {
         let Some((s, p)) = l.split_once(' ') else {
@@ -98,8 +128,16 @@ pub fn list_remote(hub: &Hub) -> Result<Vec<(String, u64)>, String> {
         let Ok(size) = s.trim().parse::<u64>() else {
             continue;
         };
-        let base = p.rsplit('/').next().unwrap_or("");
-        if base.starts_with('.') || !util::has_ext_in(base, &hub.cfg.extensions) {
+        // Only direct children of the camera folder. A file name containing a newline can
+        // make `stat` print something that looks like another entry; a forged line must
+        // not be able to point anywhere else.
+        let Some(base) = p.strip_prefix(dir).and_then(|r| r.strip_prefix('/')) else {
+            continue;
+        };
+        if base.is_empty() || base.contains('/') || base == ".." || base.starts_with('.') {
+            continue;
+        }
+        if !util::has_ext_in(base, &hub.cfg.extensions) {
             continue;
         }
         v.push((p.to_string(), size));
@@ -110,7 +148,7 @@ pub fn list_remote(hub: &Hub) -> Result<Vec<(String, u64)>, String> {
 fn pull(hub: &Hub, remote: &str, local: &std::path::Path) -> Result<(), String> {
     let mut c = adb_cmd(hub);
     c.arg("pull").arg(remote).arg(local);
-    run(c).map(|_| ())
+    run(c, hub.cfg.adb_timeout.saturating_mul(10)).map(|_| ())
 }
 
 /// One polling pass. `prev` holds the sizes seen on the previous pass: a file is taken
@@ -160,7 +198,7 @@ pub fn pass(hub: &Hub, prev: &mut HashMap<String, u64>) -> Result<(), String> {
                 if hub.cfg.adb_delete {
                     let mut c = adb_cmd(hub);
                     c.arg("shell").arg(format!("rm -f -- {}", shq(&path)));
-                    if let Err(e) = run(c) {
+                    if let Err(e) = run(c, hub.cfg.adb_timeout) {
                         hub.log(format!("ADB: cannot delete {name} on the phone: {e}"));
                     }
                 }

@@ -130,7 +130,12 @@ pub fn sanitize_name(raw: &str) -> Option<String> {
         out
     };
     // Windows reserved device names
-    let stem_up = out.split('.').next().unwrap_or("").to_ascii_uppercase();
+    let stem_up = out
+        .split('.')
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_ascii_uppercase();
     let reserved = matches!(stem_up.as_str(), "CON" | "PRN" | "AUX" | "NUL")
         || (stem_up.len() == 4
             && (stem_up.starts_with("COM") || stem_up.starts_with("LPT"))

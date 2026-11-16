@@ -1,5 +1,6 @@
 name: Release
-# Push a tag such as v0.1.0-alpha.1 → a DRAFT pre-release with binaries for the three systems.
+# Push a tag such as v0.1.0-alpha.1 → binaries for Windows, macOS and Linux and a PRE-RELEASE.
+# Tags containing a dash (alpha, beta, rc) are published as pre-releases.
 on:
   push:
     tags: ["v*"]
@@ -8,40 +9,54 @@ permissions:
 jobs:
   build:
     strategy:
+      fail-fast: true
       matrix:
         include:
-          - { os: ubuntu-latest, name: linux-x86_64, bin: porumbel, pack: tar }
-          - { os: windows-latest, name: windows-x86_64, bin: porumbel.exe, pack: zip }
-          - { os: macos-latest, name: macos-arm64, bin: porumbel, pack: tar }
-          - { os: macos-13, name: macos-x86_64, bin: porumbel, pack: tar }
+          - { os: ubuntu-26.04, name: linux-x86_64, target: x86_64-unknown-linux-musl, bin: porumbel, pack: tar }
+          - { os: windows-latest, name: windows-x86_64, target: x86_64-pc-windows-msvc, bin: porumbel.exe, pack: zip }
+          - { os: macos-latest, name: macos-arm64, target: aarch64-apple-darwin, bin: porumbel, pack: tar }
+          - { os: macos-15-intel, name: macos-x86_64, target: x86_64-apple-darwin, bin: porumbel, pack: tar }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
       - run: cargo test --all-targets
-      - run: cargo build --release
+      - run: cargo build --release --target ${{ matrix.target }}
       - name: Package
         shell: bash
         run: |
           d="porumbel-${GITHUB_REF_NAME}-${{ matrix.name }}"
           mkdir "$d"
-          cp "target/release/${{ matrix.bin }}" LICENSE README*.md "$d/"
+          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" LICENSE README*.md SECURITY.md "$d/"
           cp -r docs "$d/docs"
           if [ "${{ matrix.pack }}" = zip ]; then 7z a "$d.zip" "$d" >/dev/null; else tar czf "$d.tar.gz" "$d"; fi
-      - uses: actions/upload-artifact@v4
+          ls -l porumbel-*.*
+      - name: Smoke test of the packaged binary
+        shell: bash
+        run: |
+          d="porumbel-${GITHUB_REF_NAME}-${{ matrix.name }}"
+          "$d/${{ matrix.bin }}" --version
+          "$d/${{ matrix.bin }}" --help | head -3
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.name }}
           path: porumbel-*.*
   release:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: dist
           merge-multiple: true
-      - env:
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Create the release
+        env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" \
-            --draft --prerelease --title "PORUMBEL $GITHUB_REF_NAME" --generate-notes
+          flags="--generate-notes"
+          case "$GITHUB_REF_NAME" in *-*) flags="$flags --prerelease";; esac
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "PORUMBEL $GITHUB_REF_NAME" $flags

@@ -3,28 +3,36 @@ on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-26.04, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
+      - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test --all-targets
       - run: cargo build --release
+      - uses: actions/setup-node@v5
+        with:
+          node-version: latest
+      - run: node tools/check-panel.mjs
       - name: QR encoder against an independent decoder
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-26.04'
         run: |
-          pip install zxing-cpp pillow
+          python3 -m venv .venv
+          .venv/bin/pip install zxing-cpp pillow
           cargo build --example qrdump
-          python3 tools/check-qr.py
-      - uses: actions/upload-artifact@v4
+          .venv/bin/python tools/check-qr.py
+      - uses: actions/upload-artifact@v5
         with:
           name: porumbel-${{ matrix.os }}
           path: |

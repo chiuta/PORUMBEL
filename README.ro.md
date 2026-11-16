@@ -62,21 +62,23 @@ Fișierul de setări se caută lângă program (`porumbel.conf`, util pentru o c
 
 ## Securitate
 
+Lista completă: [SECURITY.md](SECURITY.md) (în engleză). Pe scurt:
+
 * Serverul folosește HTTP simplu în rețeaua locală. Totul cere tokenul (parametrul `t`, antetul
-  `X-Porumbel-Token` sau parola de la HTTP Basic). Tokenul circulă necriptat — folosiți o rețea Wi-Fi de încredere,
-  sau modul ADB, sau `bind = 127.0.0.1`. **Nu** expuneți portul pe internet.
-* Se păstrează doar imagini cu extensii acceptate; numele sunt reduse la un nume simplu de fișier (fără căi,
-  fără nume rezervate); încărcarea se face într-un fișier temporar mutat la loc abia când e completă; limită de mărime.
-* Butoanele din panou care schimbă ceva (deschide, încheie sesiunea, uită) cer tokenul în adresă sau antet, nu doar
-  Basic, ca o pagină deschisă în alt tab să nu le poată declanșa.
-* Modul ADB doar citește folderul camerei; `adb_delete` șterge o poză de pe telefon numai după ce copia de pe
-  calculator are aceeași dimensiune.
+  `X-Porumbel-Token` sau parola de la HTTP Basic). Tokenul și pozele circulă necriptat — folosiți o rețea Wi-Fi de
+  încredere, modul ADB sau `bind = 127.0.0.1`. **Nu** expuneți portul pe internet.
+* Se păstrează doar imagini reale (extensia și primii octeți trebuie să se potrivească), cu nume simple, cu limită de
+  mărime, scrise într-un fișier temporar și mutate la loc abia când sunt complete.
+* Butoanele din panou care schimbă ceva cer tokenul în adresă sau antet, nu doar Basic.
+* Modul ADB doar citește folderul camerei; `adb_delete` șterge o poză de pe telefon numai după ce copia are aceeași
+  dimensiune. Foldere sincronizate: legăturile simbolice nu sunt urmate.
 
 ## Compilare și teste
 
 ```
 cargo build --release          # target/release/porumbel  (Rust 1.75+)
-cargo test                     # 16 teste unitare + 6 de integrare
+cargo test                     # teste unitare, de integrare și adversariale (intrări ostile, concurență, telefon simulat)
+node tools/check-panel.mjs     # sintaxa panoului și cheile de traducere
 python3 tools/check-qr.py      # codul QR față de un cititor independent (pip install zxing-cpp pillow)
 ```
 

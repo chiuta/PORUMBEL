@@ -24,6 +24,8 @@ pub struct Config {
     pub adb_serial: Option<String>,
     pub phone_dir: String,
     pub adb_interval: u64,
+    /// seconds before a stuck `adb` command is killed
+    pub adb_timeout: u64,
     pub adb_all: bool,
     pub adb_delete: bool,
     pub watch: Vec<PathBuf>,
@@ -36,6 +38,8 @@ pub struct Config {
     pub launch_args: Vec<String>,
     pub extensions: Vec<String>,
     pub once: bool,
+    /// check that a file's first bytes match its extension
+    pub verify_content: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -64,6 +68,7 @@ impl Default for Config {
             adb_serial: None,
             phone_dir: "/sdcard/DCIM/OpenCamera".into(),
             adb_interval: 3,
+            adb_timeout: 60,
             adb_all: false,
             adb_delete: false,
             watch: Vec::new(),
@@ -79,6 +84,7 @@ impl Default for Config {
                 .map(|s| s.to_string())
                 .collect(),
             once: false,
+            verify_content: true,
         }
     }
 }
@@ -127,6 +133,7 @@ impl Config {
             }
             "phone_dir" => self.phone_dir = val.to_string(),
             "adb_interval" => self.adb_interval = parse_num::<u64>(&key, val)?.max(1),
+            "adb_timeout" => self.adb_timeout = parse_num::<u64>(&key, val)?.max(1),
             "adb_all" => self.adb_all = parse_bool(val)?,
             "adb_delete" => self.adb_delete = parse_bool(val)?,
             "watch" => {
@@ -165,6 +172,7 @@ impl Config {
                     return Err("extensions: the list is empty".into());
                 }
             }
+            "verify_content" => self.verify_content = parse_bool(val)?,
             "once" => self.once = parse_bool(val)?,
             other => return Err(format!("unknown setting: {other}")),
         }
@@ -206,7 +214,12 @@ impl Config {
         ));
         s.push_str(&format!("# Sesiune = poze făcute la intervale mai mici de `session_gap` secunde\n# Session = photos shot less than `session_gap` seconds apart\nsession_gap = {}\n# open = auto (deschide LegatorOCR când sesiunea s-a încheiat) | manual\nopen = {}\n", self.session_gap, if self.open == OpenMode::Auto { "auto" } else { "manual" }));
         s.push_str("# Programul LegatorOCR (gol = căutare automată: lângă PORUMBEL, în PATH)\nlaunch =\nlaunch_args =\n");
-        s.push_str(&format!("extensions = {}\n", self.extensions.join(", ")));
+        s.push_str(&format!(
+            "extensions = {}\nverify_content = {}\nadb_timeout = {}\n",
+            self.extensions.join(", "),
+            self.verify_content,
+            self.adb_timeout
+        ));
         s
     }
 

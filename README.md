@@ -69,27 +69,31 @@ A plain `key = value` file; command-line flags of the same names override it (`p
 | `session_gap` | `90` | idle seconds that end a session |
 | `open`, `launch`, `launch_args` | `auto`, auto-detect | when/how LegatorOCR is started |
 | `extensions` | `jpg, jpeg, png, tif, tiff, bmp` | accepted image types (the ones LegatorOCR reads) |
+| `verify_content` | `true` | refuse files whose first bytes do not match their extension |
+| `adb_timeout` | `60` | seconds before a stuck `adb` command is killed |
 
 The settings file is looked up next to the program (`porumbel.conf`, handy for a portable copy), else in
 `~/.config/porumbel/` (Linux), `~/Library/Application Support/porumbel/` (macOS) or `%APPDATA%\porumbel\` (Windows).
 
 ## Security
 
+See [SECURITY.md](SECURITY.md) for the full list. In short:
+
 * The server speaks plain HTTP on your local network. Everything needs the token (query `t`, header
-  `X-Porumbel-Token`, or the password of HTTP Basic). The token travels unencrypted — use it on a Wi-Fi you trust,
-  or use the ADB mode, or `bind = 127.0.0.1`. Do **not** expose the port to the internet.
-* Only image files with accepted extensions are stored; names are reduced to a plain file name (no paths, no
-  reserved names); uploads are written to a temporary file and moved into place only when complete; size limit.
-* Buttons that change something in the panel (open, close session, forget) need the token in the query or
-  header, not just Basic auth, so a page opened in another tab cannot trigger them.
+  `X-Porumbel-Token`, or the password of HTTP Basic). The token and the photos travel unencrypted — use a Wi-Fi you
+  trust, the ADB mode, or `bind = 127.0.0.1`. Do **not** expose the port to the internet.
+* Only real images are stored (extension and first bytes must agree), under plain file names, size-limited,
+  written to a temporary file and moved into place only when complete.
+* Buttons that change something in the panel need the token in the query or header, not just Basic auth.
 * ADB mode only reads the camera folder; `adb_delete` removes a photo from the phone only after the copy on the
-  computer has the same size.
+  computer has the same size. Synced folders: symbolic links are not followed.
 
 ## Build and test
 
 ```
 cargo build --release          # target/release/porumbel  (Rust 1.75+)
-cargo test                     # 16 unit + 6 integration tests
+cargo test                     # unit, integration and adversarial tests (hostile input, races, fake phone)
+node tools/check-panel.mjs     # panel script syntax and translation keys
 python3 tools/check-qr.py      # QR encoder against an independent reader (pip install zxing-cpp pillow)
 ```
 

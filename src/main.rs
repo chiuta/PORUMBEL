@@ -115,6 +115,9 @@ fn main() {
         _ => {}
     }
 
+    if cfg.serve && cfg.token.len() < 16 {
+        eprintln!("porumbel: warning: the token is short ({} characters); anyone on your network could guess it. Use 16 or more.", cfg.token.len());
+    }
     banner(&hub, &path);
 
     let mut threads = Vec::new();

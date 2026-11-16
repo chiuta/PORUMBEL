@@ -15,6 +15,11 @@ fn scan(dir: &Path, exts: &[String], depth: u32, out: &mut Vec<(PathBuf, u64, u6
         if name.starts_with('.') {
             continue; // .stfolder, .syncthing.*.tmp, hidden temp files
         }
+        // never follow symbolic links: a synced folder is not trusted to point inside itself
+        let Ok(ft) = e.file_type() else { continue };
+        if ft.is_symlink() {
+            continue;
+        }
         let Ok(md) = e.metadata() else { continue };
         let p = e.path();
         if md.is_dir() {

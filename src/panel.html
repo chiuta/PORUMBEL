@@ -66,17 +66,17 @@ es:{phone:"Teléfono",scan:"Escanee el código con el teléfono (misma red Wi‑
 pt:{phone:"Telemóvel",scan:"Leia o código com o telemóvel (mesma rede Wi‑Fi) para abrir a página de envio.",webdav:"Endereço WebDAV para as apps de sincronização:",pw:"Palavra-passe = o token do ficheiro de definições.",upload:"Envio a partir do navegador",pick:"Escolha as fotos (ou arraste-as para aqui).",sessions:"Sessões",dest:"Pasta de destino:",mode:"Abertura no LegatorOCR:",lg:"programa:",openlatest:"Abrir a última sessão no LegatorOCR",closecur:"Terminar a sessão atual",forget:"Esquecer o que foi recebido",status:"Estado",open:"Abrir",live:"em curso",done:"aberta",photos:"fotos",none:"Ainda sem sessões. Tire fotos com o Open Camera.",auto:"automática (no fim da sessão)",manual:"a pedido",nolauncher:"não encontrado — abre-se a pasta",sent:"Enviado",err:"Erro",adb:"ADB: ",confirm:"Tem a certeza? As fotos já recebidas podem ser importadas de novo."},
 de:{phone:"Telefon",scan:"Code mit dem Telefon scannen (gleiches WLAN), um die Upload-Seite zu öffnen.",webdav:"WebDAV-Adresse für Sync-Apps:",pw:"Passwort = das Token aus der Einstellungsdatei.",upload:"Upload im Browser",pick:"Fotos wählen (oder hierher ziehen).",sessions:"Sitzungen",dest:"Zielordner:",mode:"Öffnen in LegatorOCR:",lg:"Programm:",openlatest:"Letzte Sitzung in LegatorOCR öffnen",closecur:"Aktuelle Sitzung beenden",forget:"Empfangenes vergessen",status:"Status",open:"Öffnen",live:"läuft",done:"geöffnet",photos:"Fotos",none:"Noch keine Sitzung. Fotografieren Sie mit Open Camera.",auto:"automatisch (am Ende der Sitzung)",manual:"auf Anfrage",nolauncher:"nicht gefunden — stattdessen wird der Ordner geöffnet",sent:"Gesendet",err:"Fehler",adb:"ADB: ",confirm:"Sicher? Bereits empfangene Fotos können erneut importiert werden."},
 hu:{phone:"Telefon",scan:"Olvassa be a kódot a telefonnal (ugyanazon a Wi‑Fi hálózaton), hogy megnyíljon a feltöltő oldal.",webdav:"WebDAV-cím a szinkronizáló alkalmazásokhoz:",pw:"Jelszó = a beállításfájlban lévő token.",upload:"Feltöltés a böngészőből",pick:"Válassza ki a fotókat (vagy húzza ide őket).",sessions:"Munkamenetek",dest:"Célmappa:",mode:"Megnyitás a LegatorOCR-ben:",lg:"program:",openlatest:"Utolsó munkamenet megnyitása a LegatorOCR-ben",closecur:"Az aktuális munkamenet lezárása",forget:"A fogadottak elfelejtése",status:"Állapot",open:"Megnyitás",live:"folyamatban",done:"megnyitva",photos:"fotó",none:"Még nincs munkamenet. Fényképezzen az Open Camerával.",auto:"automatikus (a munkamenet végén)",manual:"kérésre",nolauncher:"nem található — helyette a mappa nyílik meg",sent:"Elküldve",err:"Hiba",adb:"ADB: ",confirm:"Biztos? A már fogadott fotók újra importálódhatnak."}};
-const q=new URLSearchParams(location.search),tok=q.get('t')||'';
+const q=new URLSearchParams(location.search);let tok=q.get('t')||'';
 let L='en';try{L=localStorage.getItem('lang')}catch(_){}
 if(!T[L]){const n=(navigator.language||'en').slice(0,2).toLowerCase();L=T[n]?n:'en'}
 const $=id=>document.getElementById(id),tr=k=>(T[L]&&T[L][k])||T.en[k]||k;
 function hdr(){return tok?{'x-porumbel-token':tok}:{}}
 function applyLang(){document.documentElement.lang=L;$('lang').value=L;document.querySelectorAll('[data-i]').forEach(e=>e.textContent=tr(e.dataset.i))}
 $('lang').onchange=e=>{L=e.target.value;try{localStorage.setItem('lang',L)}catch(_){};applyLang();refresh()};
-const qs=tok?('?t='+encodeURIComponent(tok)):'';
+let qs=tok?('?t='+encodeURIComponent(tok)):'';
 $('qr').src='/qr.svg'+qs;
-async function api(path,method){const r=await fetch(path,{method:method||'GET',headers:hdr()});return r.json().catch(()=>({}))}
-async function act(path,confirmMsg){if(confirmMsg&&!confirm(confirmMsg))return;const j=await api(path+qs,'POST');if(j.msg)alert((j.ok?tr('sent'):tr('err'))+': '+j.msg);refresh()}
+async function api(path,method){const r=await fetch(path,{method:method||'GET',headers:hdr()});const j=await r.json().catch(()=>({}));j._s=r.status;return j}
+async function act(path,confirmMsg){if(confirmMsg&&!confirm(confirmMsg))return;if(!tok){tok=prompt('token')||'';qs=tok?('?t='+encodeURIComponent(tok)):''}const sep=path.includes('?')?'&':'?';const j=await api(path+(tok&&!path.includes('t=')?sep+'t='+encodeURIComponent(tok):''),'POST');if(j.msg)alert((j.ok?tr('sent'):tr('err'))+': '+j.msg);refresh()}
 $('b-latest').onclick=()=>act('/api/open-latest');
 $('b-close').onclick=()=>act('/api/close');
 $('b-forget').onclick=()=>act('/api/forget',tr('confirm'));
@@ -96,7 +96,7 @@ async function refresh(){
     const t=document.createElement('span');t.className='tag'+(x.current?' live':'');t.textContent=x.current?tr('live'):(x.opened?tr('done'):'');
     if(t.textContent)l.appendChild(t);
     const b=document.createElement('button');b.textContent=tr('open');
-    b.onclick=()=>act('/api/open?s='+encodeURIComponent(x.name)+(tok?'&t='+encodeURIComponent(tok):''));
+    b.onclick=()=>act('/api/open?s='+encodeURIComponent(x.name));
     li.append(l,b);ul.appendChild(li)}
   $('log').textContent=s.log.join('\n');
 }

@@ -15,13 +15,97 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
+use std::sync::atomic::Ordering;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 const PANEL: &str = include_str!("panel.html");
-const MAX_CONNS: usize = 64;
-static CONNS: AtomicUsize = AtomicUsize::new(0);
+const MAX_CONNS: usize = 128;
+/// A connection that has not delivered a complete request this long after it was
+/// opened (or after the previous answer) is cut: protects against idle/slowloris sockets.
+const HEADER_SECS: u64 = 10;
+
+/// Connection bookkeeping. A connection is *half-open* while we wait for a request
+/// (nobody has proved anything yet) and *active* while one is being served. When the
+/// table is full, a new connection evicts the oldest half-open one, so idle sockets
+/// can never lock a real client out.
+struct Slots {
+    next: u64,
+    half: Vec<(u64, Instant, TcpStream)>,
+    active: usize,
+}
+static SLOTS: Mutex<Slots> = Mutex::new(Slots {
+    next: 0,
+    half: Vec::new(),
+    active: 0,
+});
+
+fn slots() -> std::sync::MutexGuard<'static, Slots> {
+    SLOTS.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+fn register(s: &TcpStream) -> Option<u64> {
+    let clone = s.try_clone().ok()?;
+    let mut g = slots();
+    if g.active + g.half.len() >= MAX_CONNS {
+        if g.half.is_empty() {
+            return None;
+        }
+        let (_, _, old) = g.half.remove(0);
+        let _ = old.shutdown(std::net::Shutdown::Both);
+    }
+    g.next += 1;
+    let id = g.next;
+    g.half.push((id, Instant::now(), clone));
+    Some(id)
+}
+
+/// half-open → active; false when the connection was evicted or timed out meanwhile
+fn to_active(id: u64) -> bool {
+    let mut g = slots();
+    match g.half.iter().position(|(i, _, _)| *i == id) {
+        Some(p) => {
+            g.half.remove(p);
+            g.active += 1;
+            true
+        }
+        None => false,
+    }
+}
+
+fn to_half(id: u64, s: &TcpStream) {
+    let clone = s.try_clone();
+    let mut g = slots();
+    g.active = g.active.saturating_sub(1);
+    if let Ok(c) = clone {
+        g.half.push((id, Instant::now(), c));
+    }
+}
+
+fn release(id: u64, active: bool) {
+    let mut g = slots();
+    if active {
+        g.active = g.active.saturating_sub(1);
+    } else {
+        g.half.retain(|(i, _, _)| *i != id);
+    }
+}
+
+fn reaper() {
+    loop {
+        std::thread::sleep(Duration::from_secs(1));
+        let mut g = slots();
+        let now = Instant::now();
+        g.half.retain(|(_, since, s)| {
+            if now.duration_since(*since) >= Duration::from_secs(HEADER_SECS) {
+                let _ = s.shutdown(std::net::Shutdown::Both);
+                false
+            } else {
+                true
+            }
+        });
+    }
+}
 
 pub struct Req {
     pub method: String,
@@ -42,18 +126,22 @@ pub fn start(hub: Arc<Hub>) -> io::Result<SocketAddr> {
     let listener = TcpListener::bind((hub.cfg.bind.as_str(), hub.cfg.port))?;
     let addr = listener.local_addr()?;
     hub.port.store(addr.port(), Ordering::Relaxed);
+    static REAPER: std::sync::Once = std::sync::Once::new();
+    REAPER.call_once(|| {
+        std::thread::spawn(reaper);
+    });
     std::thread::spawn(move || {
         for s in listener.incoming().flatten() {
-            if CONNS.fetch_add(1, Ordering::SeqCst) >= MAX_CONNS {
-                CONNS.fetch_sub(1, Ordering::SeqCst);
+            let Some(id) = register(&s) else {
                 let mut s = s;
                 let _ = s.write_all(b"HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
                 continue;
-            }
+            };
             let hub = hub.clone();
             std::thread::spawn(move || {
-                let _ = handle(&hub, s);
-                CONNS.fetch_sub(1, Ordering::SeqCst);
+                let mut active = false;
+                let _ = handle(&hub, s, id, &mut active);
+                release(id, active);
             });
         }
     });
@@ -349,7 +437,7 @@ fn json(code: u16, body: String) -> Resp<'static> {
     }
 }
 
-fn handle(hub: &Hub, stream: TcpStream) -> io::Result<()> {
+fn handle(hub: &Hub, stream: TcpStream, id: u64, active: &mut bool) -> io::Result<()> {
     stream.set_read_timeout(Some(Duration::from_secs(30)))?;
     stream.set_write_timeout(Some(Duration::from_secs(60)))?;
     let _ = stream.set_nodelay(true);
@@ -364,6 +452,10 @@ fn handle(hub: &Hub, stream: TcpStream) -> io::Result<()> {
                 return Ok(());
             }
         };
+        if !to_active(id) {
+            return Ok(()); // evicted or timed out while the request was arriving
+        }
+        *active = true;
         let keep = route(hub, &req, &mut reader, &mut stream)?;
         if !keep {
             // Lingering close: tell the client we are done, then swallow what it still
@@ -374,6 +466,8 @@ fn handle(hub: &Hub, stream: TcpStream) -> io::Result<()> {
             return Ok(());
         }
         stream.set_read_timeout(Some(Duration::from_secs(20)))?;
+        to_half(id, &stream);
+        *active = false;
     }
 }
 

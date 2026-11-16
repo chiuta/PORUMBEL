@@ -1,7 +1,7 @@
 #![allow(clippy::field_reassign_with_default, clippy::ptr_arg)]
-use porumbel::config::{Config, OpenMode};
+use porumbel::config::Config;
 use porumbel::hub::Hub;
-use porumbel::{adb, server, util, watch};
+use porumbel::{server, util, watch};
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Read, Write};
@@ -26,6 +26,7 @@ fn cfg(inbox: &PathBuf) -> Config {
     c.bind = "127.0.0.1".into();
     c.port = 0;
     c.session_gap = 3600;
+    c.verify_content = false; // these tests use tiny stand-in payloads
     c
 }
 
@@ -268,6 +269,8 @@ fn panel_api_and_csrf_rules() {
 #[cfg(unix)]
 mod unix_only {
     use super::*;
+    use porumbel::adb;
+    use porumbel::config::OpenMode;
     use std::os::unix::fs::PermissionsExt;
 
     /// A stand-in for `adb` that runs the "phone" commands on this machine, so the

@@ -39,6 +39,29 @@ pub enum Outcome {
     Duplicate,
 }
 
+/// First bytes of the file agree with its extension (JPEG, PNG, TIFF, BMP).
+fn looks_like_image(path: &Path, name: &str) -> bool {
+    use std::io::Read;
+    let mut head = [0u8; 8];
+    let n = match fs::File::open(path).and_then(|mut f| f.read(&mut head)) {
+        Ok(n) => n,
+        Err(_) => return false,
+    };
+    let h = &head[..n];
+    match util::ext_of(name).as_str() {
+        "jpg" | "jpeg" => h.starts_with(&[0xFF, 0xD8, 0xFF]),
+        "png" => h.starts_with(&[0x89, b'P', b'N', b'G']),
+        "tif" | "tiff" => {
+            h.starts_with(&[b'I', b'I', 0x2A, 0x00])
+                || h.starts_with(&[b'M', b'M', 0x00, 0x2A])
+                || h.starts_with(&[b'I', b'I', 0x2B, 0x00])
+                || h.starts_with(&[b'M', b'M', 0x00, 0x2B])
+        }
+        "bmp" => h.starts_with(b"BM"),
+        _ => true, // an extension the user added by hand: no opinion
+    }
+}
+
 pub struct SessionInfo {
     pub name: String,
     pub count: usize,
@@ -52,10 +75,16 @@ pub struct Hub {
     pub port: std::sync::atomic::AtomicU16,
     state_dir: PathBuf,
     inner: Mutex<Inner>,
+    /// serialises "is it known? pick a name, move, record" so that concurrent uploads of
+    /// the same photo (or the same name) can neither duplicate nor overwrite
+    ingest_lock: Mutex<()>,
 }
 
 impl Hub {
-    pub fn new(cfg: Config) -> std::io::Result<Hub> {
+    pub fn new(mut cfg: Config) -> std::io::Result<Hub> {
+        if cfg.inbox.is_relative() {
+            cfg.inbox = std::env::current_dir()?.join(&cfg.inbox);
+        }
         let state_dir = cfg.inbox.join(".porumbel");
         fs::create_dir_all(state_dir.join("tmp"))?;
         fs::create_dir_all(state_dir.join("stage"))?;
@@ -96,6 +125,7 @@ impl Hub {
             port: std::sync::atomic::AtomicU16::new(port),
             state_dir,
             inner: Mutex::new(inner),
+            ingest_lock: Mutex::new(()),
         })
     }
 
@@ -210,6 +240,11 @@ impl Hub {
             let _ = fs::remove_file(tmp);
             return Err(format!("empty file: {name}"));
         }
+        if self.cfg.verify_content && !looks_like_image(tmp, &name) {
+            let _ = fs::remove_file(tmp);
+            return Err(format!("content does not match the file type: {name}"));
+        }
+        let _one_at_a_time = self.ingest_lock.lock().unwrap_or_else(|e| e.into_inner());
         if self.known(&name, size) {
             let _ = fs::remove_file(tmp);
             return Ok(Outcome::Duplicate);
@@ -521,6 +556,7 @@ mod tests {
         let mut cfg = Config::default();
         cfg.inbox = dir.clone();
         cfg.session_gap = gap;
+        cfg.verify_content = false;
         (Hub::new(cfg).unwrap(), dir)
     }
 
