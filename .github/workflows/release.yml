@@ -38,7 +38,7 @@ jobs:
         run: |
           d="porumbel-${GITHUB_REF_NAME}-${{ matrix.name }}"
           "$d/${{ matrix.bin }}" --version
-          "$d/${{ matrix.bin }}" --help | head -3
+          "$d/${{ matrix.bin }}" --help > /dev/null
       - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.name }}
