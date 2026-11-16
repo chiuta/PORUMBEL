@@ -19,14 +19,23 @@ permissions:
 jobs:
   build:
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
+        # The Linux builds are static (musl): no glibc version, no kernel feature beyond the
+        # basics, so they run on old distributions too. "extra" = nice to have; if one fails,
+        # the release still goes out without it. "run" = the binary can be executed on the runner.
         include:
-          - { os: ubuntu-26.04, name: linux-x86_64, target: x86_64-unknown-linux-musl, bin: porumbel, pack: tar }
-          - { os: windows-latest, name: windows-x86_64, target: x86_64-pc-windows-msvc, bin: porumbel.exe, pack: zip }
-          - { os: macos-latest, name: macos-arm64, target: aarch64-apple-darwin, bin: porumbel, pack: tar }
-          - { os: macos-15-intel, name: macos-x86_64, target: x86_64-apple-darwin, bin: porumbel, pack: tar }
+          - { os: ubuntu-26.04, name: linux-x86_64, target: x86_64-unknown-linux-musl, bin: porumbel, pack: tar, run: true, test: true }
+          - { os: ubuntu-24.04-arm, name: linux-aarch64, target: aarch64-unknown-linux-musl, bin: porumbel, pack: tar, run: true, test: true, extra: true }
+          - { os: ubuntu-26.04, name: linux-i686, target: i686-unknown-linux-musl, bin: porumbel, pack: tar, run: true, lld: true, extra: true }
+          - { os: ubuntu-26.04, name: linux-armv7, target: armv7-unknown-linux-musleabihf, bin: porumbel, pack: tar, lld: true, extra: true }
+          - { os: ubuntu-26.04, name: linux-riscv64, target: riscv64gc-unknown-linux-musl, bin: porumbel, pack: tar, lld: true, extra: true }
+          - { os: windows-latest, name: windows-x86_64, target: x86_64-pc-windows-msvc, bin: porumbel.exe, pack: zip, run: true, test: true }
+          - { os: macos-latest, name: macos-arm64, target: aarch64-apple-darwin, bin: porumbel, pack: tar, run: true, test: true }
+          - { os: macos-15-intel, name: macos-x86_64, target: x86_64-apple-darwin, bin: porumbel, pack: tar, run: true, test: true }
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.extra == true }}
+    timeout-minutes: 40
     steps:
       - name: Tag name sanity
         shell: bash
@@ -41,8 +50,18 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - run: cargo test --all-targets
-      - run: cargo build --release --target ${{ matrix.target }}
+      - name: Test
+        if: ${{ matrix.test }}
+        run: cargo test --all-targets
+      - name: Build
+        shell: bash
+        run: |
+          # cross targets: link with the Rust-bundled lld, no C cross toolchain needed
+          if [ "${{ matrix.lld }}" = "true" ]; then
+            t=$(echo "${{ matrix.target }}" | tr 'a-z-' 'A-Z_')
+            export "CARGO_TARGET_${t}_LINKER=rust-lld"
+          fi
+          cargo build --release --target ${{ matrix.target }}
       - name: Package
         shell: bash
         run: |
@@ -53,6 +72,7 @@ jobs:
           if [ "${{ matrix.pack }}" = zip ]; then 7z a "$d.zip" "$d" >/dev/null; else tar czf "$d.tar.gz" "$d"; fi
           ls -l porumbel-*.tar.gz porumbel-*.zip 2>/dev/null || true
       - name: Smoke test of the packaged binary
+        if: ${{ matrix.run }}
         shell: bash
         run: |
           d="porumbel-${TAG}-${{ matrix.name }}"

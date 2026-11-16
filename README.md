@@ -39,6 +39,8 @@ nothing leaves your network.
 Control panel (status, QR code, sessions, "open in LegatorOCR" buttons, upload from a browser):
 `http://localhost:8750/?t=YOUR_TOKEN` — the address is printed at start.
 
+**Linux builds** (release page): `linux-x86_64`, `linux-aarch64`, `linux-i686`, `linux-armv7`, `linux-riscv64` — all statically linked, so they run on old distributions and need no particular glibc. Windows and macOS (Apple silicon and Intel) too.
+
 ## Sessions and LegatorOCR
 
 Photos taken less than `session_gap` seconds apart go into the same folder, named after the first

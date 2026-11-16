@@ -38,6 +38,8 @@ nimic nu iese din rețeaua ta.
 Panou de control (stare, cod QR, sesiuni, butoane „Deschide în LegatorOCR”, încărcare din browser):
 `http://localhost:8750/?t=TOKENUL_DUMNEAVOASTRĂ` — adresa se afișează la pornire.
 
+**Versiuni Linux** (pagina de release): `linux-x86_64`, `linux-aarch64`, `linux-i686`, `linux-armv7`, `linux-riscv64` — toate legate static, deci rulează și pe distribuții vechi, fără o versiune anume de glibc. Plus Windows și macOS (Apple silicon și Intel).
+
 ## Sesiuni și LegatorOCR
 
 Pozele făcute la mai puțin de `session_gap` secunde una de alta ajung în același folder, numit după ora
