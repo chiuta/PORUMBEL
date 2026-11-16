@@ -5,32 +5,172 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PORUMBEL — pozele din Open Camera, direct în LegatorOCR</title>
 <meta name="description" content="Duce automat pozele făcute cu Open Camera în folderul de pe calculator și le deschide în LegatorOCR. Rust, fără dependențe, fără cloud.">
+<link rel="alternate" hreflang="ro" href="https://porumbel.chiuta.ro/#ro"><link rel="alternate" hreflang="en" href="https://porumbel.chiuta.ro/#en"><link rel="alternate" hreflang="fr" href="https://porumbel.chiuta.ro/#fr"><link rel="alternate" hreflang="it" href="https://porumbel.chiuta.ro/#it"><link rel="alternate" hreflang="es" href="https://porumbel.chiuta.ro/#es"><link rel="alternate" hreflang="pt" href="https://porumbel.chiuta.ro/#pt"><link rel="alternate" hreflang="de" href="https://porumbel.chiuta.ro/#de"><link rel="alternate" hreflang="hu" href="https://porumbel.chiuta.ro/#hu">
 <style>
-:root{--bg:#f6f4ef;--fg:#1d2327;--mut:#5d6870;--card:#fff;--line:#d9d4c8;--acc:#1f5f8b}
-@media(prefers-color-scheme:dark){:root{--bg:#15191c;--fg:#e8e6e1;--mut:#9aa5ac;--card:#1f2428;--line:#343c42;--acc:#6fb1de}}
+:root{--bg:#f6f4ef;--fg:#1d2327;--mut:#5d6870;--card:#fff;--line:#d9d4c8;--acc:#1f5f8b;--warn:#8a5a00}
+@media(prefers-color-scheme:dark){:root{--bg:#15191c;--fg:#e8e6e1;--mut:#9aa5ac;--card:#1f2428;--line:#343c42;--acc:#6fb1de;--warn:#e6b450}}
 body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.55 system-ui,Segoe UI,Roboto,sans-serif}
-main{max-width:860px;margin:0 auto;padding:2rem 1rem}
-h1{letter-spacing:.1em;margin:.2rem 0}
+main{max-width:860px;margin:0 auto;padding:1.5rem 1rem 3rem}
+h1{letter-spacing:.1em;margin:.4rem 0 0}
 a{color:var(--acc)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem 1.2rem;margin:1rem 0}
-pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.8rem;overflow:auto;font-size:.85rem}
+.tag{margin:.1rem 0 1rem;color:var(--mut);font-style:italic}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.9rem 1.2rem;margin:1rem 0}
+.card ol,.card ul{margin:.4rem 0 .2rem;padding-left:1.3rem}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.8rem;overflow:auto;font-size:.82rem}
+code{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 .25em;font-size:.9em}
 .mut{color:var(--mut)}
-.langs a{margin-right:.6rem}
+.alpha{color:var(--warn);margin:.3rem 0 0}
+nav{display:flex;flex-wrap:wrap;gap:.3rem .5rem;font-size:.92rem}
+nav a{padding:.15rem .6rem;border:1px solid var(--line);border-radius:999px;text-decoration:none}
+nav a[aria-current=true]{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+body.js section{display:none}
+body.js section.on{display:block}
+footer{margin-top:2rem;font-size:.85rem}
 </style>
 </head>
 <body><main>
-<p class="langs mut"><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.ro.md">Română</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.md">English</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.fr.md">Français</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.it.md">Italiano</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.es.md">Español</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.pt.md">Português</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.de.md">Deutsch</a><a href="https://github.com/chiuta/PORUMBEL/blob/main/README.hu.md">Magyar</a></p>
+<nav aria-label="Language"><a href="#ro" data-go="ro" hreflang="ro">Română</a><a href="#en" data-go="en" hreflang="en">English</a><a href="#fr" data-go="fr" hreflang="fr">Français</a><a href="#it" data-go="it" hreflang="it">Italiano</a><a href="#es" data-go="es" hreflang="es">Español</a><a href="#pt" data-go="pt" hreflang="pt">Português</a><a href="#de" data-go="de" hreflang="de">Deutsch</a><a href="#hu" data-go="hu" hreflang="hu">Magyar</a></nav>
+<section lang="ro" data-l="ro">
 <h1>PORUMBEL</h1>
-<p>Un porumbel-curier pentru scanările tale: duce pozele făcute cu <b>Open Camera</b> în folderul de pe calculator, automat, câte un subfolder pe sesiune, și deschide fiecare sesiune încheiată în <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>.</p>
-<div class="card"><b>Trei căi de transfer</b>, care pot funcționa împreună:
-<ol><li><b>Wi‑Fi</b> — cod QR și pagină de încărcare în browser, sau WebDAV pentru aplicații de sincronizare;</li>
-<li><b>ADB</b> — pozele noi sunt luate direct din folderul camerei, prin USB sau Wi‑Fi;</li>
-<li><b>folder sincronizat</b> — de exemplu cu Syncthing.</li></ol></div>
-<pre>porumbel            # prima rulare: creează setările și pornește serverul
-porumbel qr         # codul QR pentru telefon
-porumbel --adb      # sau: ia pozele prin ADB
-porumbel --watch ~/Syncthing/OpenCamera</pre>
-<p>Un singur program mic în Rust, <b>fără biblioteci externe</b>, pentru Windows, macOS și Linux. Fără cont, fără cloud; licență MIT.</p>
-<p><a href="https://github.com/chiuta/PORUMBEL">Cod sursă și descărcări</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.ro.md">Ghid pas cu pas (Open Camera)</a></p>
-<p class="mut">Panou de control în 8 limbi; <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.ro.md">limite și securitate</a> explicate pe față.</p>
-</main></body></html>
+<p class="tag">Un porumbel-curier pentru scanările tale</p>
+<p>Duce pozele făcute cu <b>Open Camera</b> în folderul de pe calculator, automat, câte un subfolder pe sesiune, și deschide fiecare sesiune încheiată în <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>.</p>
+<div class="card"><b>Trei căi de transfer, care pot funcționa împreună</b><ol><li><b>Wi‑Fi</b> — cod QR și pagină de încărcare în browser, sau WebDAV pentru aplicații de sincronizare;</li><li><b>ADB</b> — pozele noi sunt luate direct din folderul camerei, prin USB sau Wi‑Fi;</li><li><b>folder sincronizat</b> — de exemplu cu Syncthing.</li></ol></div>
+<pre>porumbel                                  # prima rulare: creează setările, pornește serverul
+porumbel qr                               # codul QR pentru telefon
+porumbel --adb                            # sau: ia pozele prin ADB
+porumbel --watch ~/Syncthing/OpenCamera   # sau: urmărește un folder sincronizat
+porumbel doctor                           # dacă ceva nu merge: diagnostic</pre>
+<div class="card"><b>Ce face în plus</b><ul><li>Pauză de 90 de secunde între poze = sesiune încheiată; LegatorOCR se deschide singur cu folderul gata încărcat.</li><li>Nu duplică: o poză primită o dată nu mai e luată a doua oară.</li><li>Verifică fișierele (nume curate, conținut de imagine) și cere parolă pe rețea.</li><li>Panou de control în 8 limbi, <code>porumbel doctor</code> pentru diagnostic.</li></ul></div>
+<div class="card"><b>Descărcare</b><p>Windows, macOS (Apple silicon și Intel) și Linux (x86_64, aarch64, i686, armv7; legate static, merg și pe distribuții vechi). <a href="https://github.com/chiuta/PORUMBEL/releases">Pagina de versiuni</a></p><p class="alpha"><b>Versiune alpha.</b> Protocolul e testat, dar încă nu pe telefoane și aplicații reale de sincronizare — spuneți-ne ce observați.</p></div>
+<p class="links"><a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.ro.md">Ghid pas cu pas (Open Camera)</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.ro.md">Limite și securitate</a> · <a href="https://github.com/chiuta/PORUMBEL">Cod sursă</a></p>
+<p class="mut">Un singur program mic în Rust, <b>fără biblioteci externe</b>. Fără cont, fără cloud; licență MIT.</p>
+</section>
+<section lang="en" data-l="en">
+<h1>PORUMBEL</h1>
+<p class="tag">A carrier pigeon for your scans</p>
+<p>Carries photos taken with <b>Open Camera</b> into a folder on your computer automatically, one subfolder per shooting session, and opens each finished session in <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>.</p>
+<div class="card"><b>Three ways to transfer, which can work together</b><ol><li><b>Wi‑Fi</b> — QR code and a browser upload page, or WebDAV for sync apps;</li><li><b>ADB</b> — new photos are pulled straight from the camera folder over USB or Wi‑Fi;</li><li><b>synced folder</b> — for example with Syncthing.</li></ol></div>
+<pre>porumbel                                  # first run: creates the settings and starts the server
+porumbel qr                               # QR code for the phone
+porumbel --adb                            # or: pull the photos over ADB
+porumbel --watch ~/Syncthing/OpenCamera   # or: watch a synced folder
+porumbel doctor                           # if something does not work: diagnostics</pre>
+<div class="card"><b>What else it does</b><ul><li>A 90‑second pause between photos ends the session; LegatorOCR opens by itself with the folder loaded.</li><li>No duplicates: a photo received once is never taken twice.</li><li>Checks files (clean names, real image content) and asks for a password on the network.</li><li>Control panel in 8 languages, and <code>porumbel doctor</code> for diagnostics.</li></ul></div>
+<div class="card"><b>Download</b><p>Windows, macOS (Apple silicon and Intel) and Linux (x86_64, aarch64, i686, armv7; statically linked, so they run on old distributions too). <a href="https://github.com/chiuta/PORUMBEL/releases">Releases page</a></p><p class="alpha"><b>Alpha release.</b> The protocol is tested, but not yet on real phones and real sync apps — tell us what you see.</p></div>
+<p class="links"><a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.md">Step-by-step guide (Open Camera)</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.md">Limits and security</a> · <a href="https://github.com/chiuta/PORUMBEL">Source code</a></p>
+<p class="mut">One small program in Rust, <b>no third-party crates</b>. No account, no cloud; MIT licence.</p>
+</section>
+<section lang="fr" data-l="fr">
+<h1>PORUMBEL</h1>
+<p class="tag">Un pigeon voyageur pour vos scans</p>
+<p>Envoie les photos prises avec <b>Open Camera</b> dans un dossier de l'ordinateur, automatiquement, un sous-dossier par session de prise de vue, et ouvre chaque session terminée dans <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>.</p>
+<div class="card"><b>Trois moyens de transfert, utilisables ensemble</b><ol><li><b>Wi‑Fi</b> — QR code et page d'envoi dans le navigateur, ou WebDAV pour les applis de synchronisation ;</li><li><b>ADB</b> — les nouvelles photos sont prises directement dans le dossier de l'appareil, par USB ou Wi‑Fi ;</li><li><b>dossier synchronisé</b> — par exemple avec Syncthing.</li></ol></div>
+<pre>porumbel                                  # premier lancement : crée les réglages et démarre le serveur
+porumbel qr                               # QR code pour le téléphone
+porumbel --adb                            # ou : récupérer les photos par ADB
+porumbel --watch ~/Syncthing/OpenCamera   # ou : surveiller un dossier synchronisé
+porumbel doctor                           # en cas de souci : diagnostic</pre>
+<div class="card"><b>Et aussi</b><ul><li>Une pause de 90 secondes entre deux photos clôt la session ; LegatorOCR s'ouvre seul avec le dossier chargé.</li><li>Pas de doublons : une photo reçue une fois n'est jamais reprise.</li><li>Vérifie les fichiers (noms propres, vrai contenu d'image) et exige un mot de passe sur le réseau.</li><li>Panneau de contrôle en 8 langues, et <code>porumbel doctor</code> pour le diagnostic.</li></ul></div>
+<div class="card"><b>Téléchargement</b><p>Windows, macOS (Apple silicon et Intel) et Linux (x86_64, aarch64, i686, armv7 ; liés statiquement, ils tournent aussi sur d'anciennes distributions). <a href="https://github.com/chiuta/PORUMBEL/releases">Page des versions</a></p><p class="alpha"><b>Version alpha.</b> Le protocole est testé, mais pas encore sur de vrais téléphones ni de vraies applis de synchronisation — dites-nous ce que vous constatez.</p></div>
+<p class="links"><a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.fr.md">Guide pas à pas (Open Camera)</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.fr.md">Limites et sécurité</a> · <a href="https://github.com/chiuta/PORUMBEL">Code source</a></p>
+<p class="mut">Un seul petit programme en Rust, <b>sans bibliothèque externe</b>. Aucun compte, aucun cloud ; licence MIT.</p>
+</section>
+<section lang="it" data-l="it">
+<h1>PORUMBEL</h1>
+<p class="tag">Un piccione viaggiatore per le vostre scansioni</p>
+<p>Porta le foto scattate con <b>Open Camera</b> in una cartella del computer, in automatico, una sottocartella per sessione, e apre ogni sessione conclusa in <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>.</p>
+<div class="card"><b>Tre modi di trasferimento, che possono lavorare insieme</b><ol><li><b>Wi‑Fi</b> — codice QR e pagina di caricamento nel browser, oppure WebDAV per le app di sincronizzazione;</li><li><b>ADB</b> — le foto nuove vengono prese direttamente dalla cartella della fotocamera, via USB o Wi‑Fi;</li><li><b>cartella sincronizzata</b> — per esempio con Syncthing.</li></ol></div>
+<pre>porumbel                                  # primo avvio: crea le impostazioni e avvia il server
+porumbel qr                               # codice QR per il telefono
+porumbel --adb                            # oppure: preleva le foto via ADB
+porumbel --watch ~/Syncthing/OpenCamera   # oppure: osserva una cartella sincronizzata
+porumbel doctor                           # se qualcosa non va: diagnosi</pre>
+<div class="card"><b>Cos'altro fa</b><ul><li>Una pausa di 90 secondi tra le foto chiude la sessione; LegatorOCR si apre da solo con la cartella già caricata.</li><li>Niente doppioni: una foto ricevuta una volta non viene presa di nuovo.</li><li>Controlla i file (nomi puliti, contenuto d'immagine reale) e chiede una password sulla rete.</li><li>Pannello di controllo in 8 lingue e <code>porumbel doctor</code> per la diagnosi.</li></ul></div>
+<div class="card"><b>Download</b><p>Windows, macOS (Apple silicon e Intel) e Linux (x86_64, aarch64, i686, armv7; collegati staticamente, girano anche su distribuzioni vecchie). <a href="https://github.com/chiuta/PORUMBEL/releases">Pagina delle versioni</a></p><p class="alpha"><b>Versione alpha.</b> Il protocollo è collaudato, ma non ancora su telefoni e app di sincronizzazione reali — segnalateci cosa osservate.</p></div>
+<p class="links"><a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.it.md">Guida passo passo (Open Camera)</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.it.md">Limiti e sicurezza</a> · <a href="https://github.com/chiuta/PORUMBEL">Codice sorgente</a></p>
+<p class="mut">Un solo piccolo programma in Rust, <b>senza librerie esterne</b>. Nessun account, nessun cloud; licenza MIT.</p>
+</section>
+<section lang="es" data-l="es">
+<h1>PORUMBEL</h1>
+<p class="tag">Una paloma mensajera para sus escaneos</p>
+<p>Lleva las fotos hechas con <b>Open Camera</b> a una carpeta del ordenador, automáticamente, una subcarpeta por sesión, y abre cada sesión terminada en <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>.</p>
+<div class="card"><b>Tres vías de transferencia, que pueden funcionar a la vez</b><ol><li><b>Wi‑Fi</b> — código QR y página de subida en el navegador, o WebDAV para apps de sincronización;</li><li><b>ADB</b> — las fotos nuevas se toman directamente de la carpeta de la cámara, por USB o Wi‑Fi;</li><li><b>carpeta sincronizada</b> — por ejemplo con Syncthing.</li></ol></div>
+<pre>porumbel                                  # primer arranque: crea los ajustes e inicia el servidor
+porumbel qr                               # código QR para el teléfono
+porumbel --adb                            # o: traer las fotos por ADB
+porumbel --watch ~/Syncthing/OpenCamera   # o: vigilar una carpeta sincronizada
+porumbel doctor                           # si algo falla: diagnóstico</pre>
+<div class="card"><b>Qué más hace</b><ul><li>Una pausa de 90 segundos entre fotos cierra la sesión; LegatorOCR se abre solo con la carpeta cargada.</li><li>Sin duplicados: una foto recibida una vez no se toma dos veces.</li><li>Comprueba los archivos (nombres limpios, contenido de imagen real) y pide contraseña en la red.</li><li>Panel de control en 8 idiomas y <code>porumbel doctor</code> para diagnosticar.</li></ul></div>
+<div class="card"><b>Descarga</b><p>Windows, macOS (Apple silicon e Intel) y Linux (x86_64, aarch64, i686, armv7; enlazados estáticamente, funcionan también en distribuciones antiguas). <a href="https://github.com/chiuta/PORUMBEL/releases">Página de versiones</a></p><p class="alpha"><b>Versión alfa.</b> El protocolo está probado, pero aún no con teléfonos ni apps de sincronización reales — cuéntenos qué observa.</p></div>
+<p class="links"><a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.es.md">Guía paso a paso (Open Camera)</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.es.md">Límites y seguridad</a> · <a href="https://github.com/chiuta/PORUMBEL">Código fuente</a></p>
+<p class="mut">Un solo programa pequeño en Rust, <b>sin bibliotecas externas</b>. Sin cuenta, sin nube; licencia MIT.</p>
+</section>
+<section lang="pt" data-l="pt">
+<h1>PORUMBEL</h1>
+<p class="tag">Um pombo-correio para as suas digitalizações</p>
+<p>Leva as fotos tiradas com o <b>Open Camera</b> para uma pasta do computador, automaticamente, uma subpasta por sessão, e abre cada sessão concluída no <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>.</p>
+<div class="card"><b>Três vias de transferência, que podem funcionar em conjunto</b><ol><li><b>Wi‑Fi</b> — código QR e página de envio no navegador, ou WebDAV para apps de sincronização;</li><li><b>ADB</b> — as fotos novas são tiradas diretamente da pasta da câmara, por USB ou Wi‑Fi;</li><li><b>pasta sincronizada</b> — por exemplo com o Syncthing.</li></ol></div>
+<pre>porumbel                                  # primeiro arranque: cria as definições e inicia o servidor
+porumbel qr                               # código QR para o telefone
+porumbel --adb                            # ou: obter as fotos por ADB
+porumbel --watch ~/Syncthing/OpenCamera   # ou: vigiar uma pasta sincronizada
+porumbel doctor                           # se algo falhar: diagnóstico</pre>
+<div class="card"><b>O que mais faz</b><ul><li>Uma pausa de 90 segundos entre fotos termina a sessão; o LegatorOCR abre sozinho com a pasta carregada.</li><li>Sem duplicados: uma foto recebida uma vez não é tomada de novo.</li><li>Verifica os ficheiros (nomes limpos, conteúdo de imagem real) e pede palavra-passe na rede.</li><li>Painel de controlo em 8 línguas e <code>porumbel doctor</code> para diagnóstico.</li></ul></div>
+<div class="card"><b>Transferência</b><p>Windows, macOS (Apple silicon e Intel) e Linux (x86_64, aarch64, i686, armv7; ligados estaticamente, funcionam também em distribuições antigas). <a href="https://github.com/chiuta/PORUMBEL/releases">Página de versões</a></p><p class="alpha"><b>Versão alfa.</b> O protocolo está testado, mas ainda não em telefones e apps de sincronização reais — diga-nos o que observa.</p></div>
+<p class="links"><a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.pt.md">Guia passo a passo (Open Camera)</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.pt.md">Limites e segurança</a> · <a href="https://github.com/chiuta/PORUMBEL">Código-fonte</a></p>
+<p class="mut">Um único programa pequeno em Rust, <b>sem bibliotecas externas</b>. Sem conta, sem nuvem; licença MIT.</p>
+</section>
+<section lang="de" data-l="de">
+<h1>PORUMBEL</h1>
+<p class="tag">Eine Brieftaube für Ihre Scans</p>
+<p>Bringt mit <b>Open Camera</b> aufgenommene Fotos automatisch in einen Ordner auf dem Computer, ein Unterordner pro Aufnahmesitzung, und öffnet jede abgeschlossene Sitzung in <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>.</p>
+<div class="card"><b>Drei Übertragungswege, die zusammen laufen können</b><ol><li><b>WLAN</b> — QR-Code und Upload-Seite im Browser, oder WebDAV für Sync-Apps;</li><li><b>ADB</b> — neue Fotos werden per USB oder WLAN direkt aus dem Kameraordner geholt;</li><li><b>synchronisierter Ordner</b> — zum Beispiel mit Syncthing.</li></ol></div>
+<pre>porumbel                                  # erster Start: legt die Einstellungen an, startet den Server
+porumbel qr                               # QR-Code für das Handy
+porumbel --adb                            # oder: Fotos per ADB holen
+porumbel --watch ~/Syncthing/OpenCamera   # oder: einen synchronisierten Ordner beobachten
+porumbel doctor                           # wenn etwas nicht klappt: Diagnose</pre>
+<div class="card"><b>Was es sonst noch tut</b><ul><li>90 Sekunden Pause zwischen Fotos beenden die Sitzung; LegatorOCR öffnet sich selbst mit dem geladenen Ordner.</li><li>Keine Doppelten: ein einmal empfangenes Foto wird nie zweimal übernommen.</li><li>Prüft Dateien (saubere Namen, echter Bildinhalt) und verlangt im Netz ein Passwort.</li><li>Bedienfeld in 8 Sprachen und <code>porumbel doctor</code> zur Diagnose.</li></ul></div>
+<div class="card"><b>Download</b><p>Windows, macOS (Apple Silicon und Intel) und Linux (x86_64, aarch64, i686, armv7; statisch gelinkt, laufen also auch auf alten Distributionen). <a href="https://github.com/chiuta/PORUMBEL/releases">Seite der Versionen</a></p><p class="alpha"><b>Alpha-Version.</b> Das Protokoll ist getestet, aber noch nicht mit echten Handys und echten Sync-Apps — berichten Sie, was Sie beobachten.</p></div>
+<p class="links"><a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.de.md">Schritt-für-Schritt-Anleitung (Open Camera)</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.de.md">Grenzen und Sicherheit</a> · <a href="https://github.com/chiuta/PORUMBEL">Quellcode</a></p>
+<p class="mut">Ein einziges kleines Rust-Programm, <b>ohne Fremdbibliotheken</b>. Kein Konto, keine Cloud; MIT-Lizenz.</p>
+</section>
+<section lang="hu" data-l="hu">
+<h1>PORUMBEL</h1>
+<p class="tag">Postagalamb a szkennelésekhez</p>
+<p>Az <b>Open Camerával</b> készült fotókat automatikusan a számítógép egy mappájába viszi, munkamenetenként egy almappába, és minden lezárt munkamenetet megnyit a <a href="https://legatorocr.chiuta.ro">LegatorOCR</a>-ben.</p>
+<div class="card"><b>Három átviteli mód, amelyek együtt is működhetnek</b><ol><li><b>Wi‑Fi</b> — QR-kód és böngészős feltöltőoldal, vagy WebDAV szinkronizáló alkalmazásokhoz;</li><li><b>ADB</b> — az új fotókat közvetlenül a kamera mappájából veszi, USB-n vagy Wi‑Fi-n;</li><li><b>szinkronizált mappa</b> — például Syncthinggel.</li></ol></div>
+<pre>porumbel                                  # első indítás: létrehozza a beállításokat, elindítja a kiszolgálót
+porumbel qr                               # QR-kód a telefonhoz
+porumbel --adb                            # vagy: a fotók átvétele ADB-vel
+porumbel --watch ~/Syncthing/OpenCamera   # vagy: szinkronizált mappa figyelése
+porumbel doctor                           # ha valami nem megy: diagnosztika</pre>
+<div class="card"><b>Mit tud még</b><ul><li>A fotók közti 90 másodperces szünet lezárja a munkamenetet; a LegatorOCR magától megnyílik a betöltött mappával.</li><li>Nincs duplikáció: az egyszer megkapott fotót nem veszi át még egyszer.</li><li>Ellenőrzi a fájlokat (tiszta nevek, valódi képtartalom), és hálózaton jelszót kér.</li><li>Vezérlőpult 8 nyelven, és <code>porumbel doctor</code> a hibakereséshez.</li></ul></div>
+<div class="card"><b>Letöltés</b><p>Windows, macOS (Apple silicon és Intel) és Linux (x86_64, aarch64, i686, armv7; statikusan linkelve, régi disztribúciókon is futnak). <a href="https://github.com/chiuta/PORUMBEL/releases">A kiadások oldala</a></p><p class="alpha"><b>Alfa verzió.</b> A protokoll tesztelt, de még nem valódi telefonokon és szinkronizáló alkalmazásokkal — írja meg, mit tapasztal.</p></div>
+<p class="links"><a href="https://github.com/chiuta/PORUMBEL/blob/main/docs/SETUP.hu.md">Lépésről lépésre útmutató (Open Camera)</a> · <a href="https://github.com/chiuta/PORUMBEL/blob/main/README.hu.md">Korlátok és biztonság</a> · <a href="https://github.com/chiuta/PORUMBEL">Forráskód</a></p>
+<p class="mut">Egyetlen kis Rust program, <b>külső könyvtárak nélkül</b>. Nincs fiók, nincs felhő; MIT-licenc.</p>
+</section>
+</main>
+<script>
+(function(){
+ var L=["ro","en","fr","it","es","pt","de","hu"],TI={"ro":"PORUMBEL — pozele din Open Camera, direct în LegatorOCR","en":"PORUMBEL — Open Camera photos, straight into LegatorOCR","fr":"PORUMBEL — les photos d'Open Camera, directement dans LegatorOCR","it":"PORUMBEL — le foto di Open Camera, direttamente in LegatorOCR","es":"PORUMBEL — las fotos de Open Camera, directas a LegatorOCR","pt":"PORUMBEL — as fotos do Open Camera, direto para o LegatorOCR","de":"PORUMBEL — Open-Camera-Fotos direkt in LegatorOCR","hu":"PORUMBEL — az Open Camera fotói közvetlenül a LegatorOCR-be"},DE={"ro":"Duce automat pozele făcute cu Open Camera în folderul de pe calculator și le deschide în LegatorOCR. Rust, fără dependențe, fără cloud.","en":"Automatically moves photos taken with Open Camera into a folder on your computer and opens them in LegatorOCR. Rust, no dependencies, no cloud.","fr":"Envoie automatiquement les photos prises avec Open Camera dans un dossier de l'ordinateur et les ouvre dans LegatorOCR. Rust, sans dépendances, sans cloud.","it":"Sposta automaticamente le foto scattate con Open Camera in una cartella del computer e le apre in LegatorOCR. Rust, senza dipendenze, senza cloud.","es":"Mueve automáticamente las fotos hechas con Open Camera a una carpeta del ordenador y las abre en LegatorOCR. Rust, sin dependencias, sin nube.","pt":"Move automaticamente as fotos tiradas com o Open Camera para uma pasta do computador e abre-as no LegatorOCR. Rust, sem dependências, sem nuvem.","de":"Überträgt mit Open Camera aufgenommene Fotos automatisch in einen Ordner auf dem Computer und öffnet sie in LegatorOCR. Rust, ohne Abhängigkeiten, ohne Cloud.","hu":"Az Open Camerával készült fotókat automatikusan a számítógép egy mappájába viszi, és megnyitja a LegatorOCR-ben. Rust, függőségek nélkül, felhő nélkül."};
+ function pick(){
+  var h=(location.hash||"").slice(1);if(L.indexOf(h)>=0)return h;
+  var n=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||"ro"]);
+  for(var i=0;i<n.length;i++){var c=String(n[i]).slice(0,2).toLowerCase();if(L.indexOf(c)>=0)return c;}
+  return "en";
+ }
+ function show(k){
+  document.body.className="js";
+  var s=document.querySelectorAll("section");
+  for(var i=0;i<s.length;i++)s[i].className=s[i].getAttribute("data-l")===k?"on":"";
+  var a=document.querySelectorAll("nav a");
+  for(var j=0;j<a.length;j++)a[j].setAttribute("aria-current",a[j].getAttribute("data-go")===k?"true":"false");
+  document.documentElement.lang=k;document.title=TI[k];
+  var m=document.querySelector('meta[name=description]');if(m)m.setAttribute("content",DE[k]);
+ }
+ window.addEventListener("hashchange",function(){show(pick())});
+ show(pick());
+})();
+</script>
+</body></html>
