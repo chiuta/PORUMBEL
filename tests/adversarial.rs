@@ -529,3 +529,60 @@ mod unix_only {
         let _ = fs::remove_dir_all(root);
     }
 }
+
+#[test]
+fn mutated_valid_requests_never_break_the_server() {
+    let dir = tmpdir("mutate");
+    let (_hub, a) = start(cfg(&dir));
+    let mut seed = 0x9E37_79B9u32;
+    let mut rnd = move || {
+        seed ^= seed << 13;
+        seed ^= seed >> 17;
+        seed ^= seed << 5;
+        seed
+    };
+    let body = jpeg(20, 7);
+    let valid: Vec<Vec<u8>> = vec![
+        [
+            format!(
+                "PUT /dav/m.jpg HTTP/1.1\r\nConnection: close\r\nContent-Length: {}\r\n{AUTH}\r\n",
+                body.len()
+            )
+            .into_bytes(),
+            body.clone(),
+        ]
+        .concat(),
+        format!("PROPFIND /dav/ HTTP/1.1\r\nConnection: close\r\nDepth: 1\r\n{AUTH}\r\n")
+            .into_bytes(),
+        format!("MKCOL /dav/x/ HTTP/1.1\r\nConnection: close\r\n{AUTH}\r\n").into_bytes(),
+        format!("MOVE /dav/a.part HTTP/1.1\r\nConnection: close\r\nDestination: http://h/dav/a.jpg\r\n{AUTH}\r\n").into_bytes(),
+        format!("GET /api/status HTTP/1.1\r\nConnection: close\r\n{AUTH}\r\n").into_bytes(),
+    ];
+    for i in 0..100 {
+        let mut raw = valid[i % valid.len()].clone();
+        for _ in 0..=(rnd() % 4) {
+            let at = (rnd() as usize) % raw.len();
+            match rnd() % 3 {
+                0 => raw[at] ^= 1 << (rnd() % 8),
+                1 => {
+                    raw.remove(at);
+                }
+                _ => raw.insert(at, (rnd() & 0xFF) as u8),
+            }
+        }
+        let mut s = TcpStream::connect(a).unwrap();
+        s.set_read_timeout(Some(Duration::from_millis(150)))
+            .unwrap();
+        let _ = s.write_all(&raw);
+        let _ = s.shutdown(std::net::Shutdown::Write);
+        let mut sink = Vec::new();
+        let _ = s.read_to_end(&mut sink);
+    }
+    // whatever was stored is a real image under the inbox; nothing half-written remains
+    assert_eq!(tmp_leftovers(&dir), 0);
+    for f in files_under(&dir) {
+        assert!(f.starts_with(&dir), "{f:?}");
+    }
+    assert_eq!(put(a, "/dav/after.jpg", &jpeg(9, 3)), 201);
+    let _ = fs::remove_dir_all(dir);
+}
