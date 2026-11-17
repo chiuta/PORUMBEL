@@ -40,6 +40,13 @@ fn scan(dir: &Path, exts: &[String], depth: u32, out: &mut Vec<(PathBuf, u64, u6
 
 type Seen = HashMap<PathBuf, (u64, u64)>;
 
+/// Oldest first (modification time, then path). `read_dir` lists files in no particular order, so a batch
+/// that appears between two scans would otherwise be imported in an arbitrary order and the session folder
+/// could be named after whichever photo happened to be listed first instead of the first one taken.
+fn oldest_first(files: &mut [(PathBuf, u64, u64)]) {
+    files.sort_by(|a, b| (a.2, &a.0).cmp(&(b.2, &b.0)));
+}
+
 pub fn pass(hub: &Hub, dir: &Path, prev: &mut Seen) {
     let mut files = Vec::new();
     scan(dir, &hub.cfg.extensions, 0, &mut files);
@@ -56,6 +63,7 @@ pub fn pass(hub: &Hub, dir: &Path, prev: &mut Seen) {
         ));
         return;
     }
+    oldest_first(&mut files);
     let mut now: Seen = HashMap::new();
     for (p, size, mt) in files {
         let name = p
@@ -115,5 +123,52 @@ pub fn run_loop(hub: &Hub, dir: PathBuf) {
             return;
         }
         std::thread::sleep(Duration::from_secs(hub.cfg.watch_interval));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn f(name: &str, mt: u64) -> (PathBuf, u64, u64) {
+        (PathBuf::from(name), 10, mt)
+    }
+
+    #[test]
+    fn a_batch_is_imported_oldest_first() {
+        let mut v = vec![
+            f("sync/IMG_20261114_135524.jpg", 300),
+            f("sync/IMG_20261114_135501.jpg", 100),
+            f("sync/IMG_20261114_135512.jpg", 200),
+        ];
+        oldest_first(&mut v);
+        let names: Vec<_> = v
+            .iter()
+            .map(|x| x.0.to_string_lossy().to_string())
+            .collect();
+        assert_eq!(
+            names,
+            [
+                "sync/IMG_20261114_135501.jpg",
+                "sync/IMG_20261114_135512.jpg",
+                "sync/IMG_20261114_135524.jpg"
+            ]
+        );
+    }
+
+    #[test]
+    fn equal_times_fall_back_to_the_path() {
+        // synced folders often stamp a whole batch with the same second
+        let mut v = vec![
+            f("b/IMG_2.jpg", 50),
+            f("a/IMG_9.jpg", 50),
+            f("a/IMG_1.jpg", 50),
+        ];
+        oldest_first(&mut v);
+        let names: Vec<_> = v
+            .iter()
+            .map(|x| x.0.to_string_lossy().to_string())
+            .collect();
+        assert_eq!(names, ["a/IMG_1.jpg", "a/IMG_9.jpg", "b/IMG_2.jpg"]);
     }
 }
